@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OnlineTuition.mu | Premier Cambridge O & A Level Tutoring Mauritius</title>
+    <meta name="description" content="Mauritius' leading online tutoring platform for Cambridge International Examinations (O & A levels) and Grades 8 to 13 by Ravi Choolun.">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81'
+                        },
+                        emerald: {
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669'
+                        }
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { opacity: '0.4' },
+                            '50%': { opacity: '0.8' }
+                        },
+                        shimmer: {
+                            '100%': { transform: 'translateX(100%)' }
+                        }
+                    },
+                    animation: {
+                        float: 'float 4s ease-in-out infinite',
+                        pulseGlow: 'pulseGlow 3s ease-in-out infinite',
+                        shimmer: 'shimmer 2s infinite'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Canvas Confetti CDN for Quiz Completion -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- FontAwesome & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .glass-card-dark {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(241, 245, 249, 0.5); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Glowing Effects */
+        .glow-brand {
+            box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.4);
+        }
+        .glow-emerald {
+            box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.4);
+        }
+
+        /* Particle Canvas Fix */
+        #particles-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Ripple effect animation */
+        .ripple {
+            position: relative;
+            overflow: hidden;
+        }
+        .ripple::after {
+            content: "";
+            display: block;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+            background-repeat: no-repeat;
+            background-position: 50%;
+            transform: scale(10, 10);
+            opacity: 0;
+            transition: transform .5s, opacity 1s;
+        }
+        .ripple:active::after {
+            transform: scale(0, 0);
+            opacity: .3;
+            transition: 0s;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-3 pointer-events-none"></div>
+
+    <!-- Header Navigation -->
+    <header class="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80 text-white shadow-xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- Left: Logo & Nav Links -->
+                <div class="flex items-center space-x-8">
+                    <button id="mobile-menu-btn" onclick="toggleMobileMenu()" class="text-slate-300 hover:text-white md:hidden focus:outline-none p-2 rounded-xl hover:bg-slate-800/60 transition">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                    <a href="#dashboard" onclick="switchView('dashboard')" class="flex items-center space-x-3 group">
+                        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-600 via-indigo-500 to-emerald-400 flex items-center justify-center shadow-lg group-hover:scale-105 group-hover:rotate-3 transition duration-300 glow-brand">
+                            <i class="fa-solid fa-graduation-cap text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <span class="text-xl font-extrabold tracking-tight text-white block leading-none">OnlineTuition<span class="text-brand-400">.mu</span></span>
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Cambridge Excellence</span>
+                        </div>
+                    </a>
+                    
+                    <nav class="hidden md:flex items-center space-x-1 text-sm font-semibold text-slate-300 border-l border-slate-800/80 pl-8">
+                        <button onclick="switchView('dashboard')" id="nav-dashboard" class="nav-btn px-4 py-2 rounded-xl text-white bg-slate-800/80 hover:bg-slate-800 transition">Dashboard</button>
+                        <button onclick="switchView('courses')" id="nav-courses" class="nav-btn px-4 py-2 rounded-xl hover:text-white hover:bg-slate-800/60 transition">Course Catalog</button>
+                        <button onclick="switchView('subscriptions')" id="nav-subscriptions" class="nav-btn px-4 py-2 rounded-xl hover:text-white hover:bg-slate-800/60 transition">Subscription Plans</button>
+                        <button onclick="openQuizModal()" class="px-4 py-2 rounded-xl hover:text-white hover:bg-slate-800/60 transition flex items-center text-emerald-400 font-bold">
+                            <i class="fa-solid fa-bolt mr-2 animate-bounce"></i> Diagnostic Quiz
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Right: Quick Payments, Cart & User -->
+                <div class="flex items-center space-x-3 sm:space-x-4">
+                    <!-- MCB Juice Badge Button -->
+                    <button onclick="openJuiceModal()" class="hidden sm:flex items-center bg-slate-900/90 hover:bg-slate-800 border border-slate-800 px-3.5 py-2 rounded-xl transition group shadow-md" title="MCB Juice Instant Payment">
+                        <div class="w-6 h-6 bg-red-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black mr-2 shadow group-hover:scale-110 transition">MCB</div>
+                        <span class="text-xs font-bold text-slate-200">Juice Pay</span>
+                    </button>
+
+                    <!-- PayPal Badge Button -->
+                    <button onclick="openPayPalModal()" class="hidden sm:flex items-center bg-slate-900/90 hover:bg-slate-800 border border-slate-800 px-3.5 py-2 rounded-xl transition group shadow-md" title="PayPal Global Payment">
+                        <div class="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-xs mr-2 shadow group-hover:scale-110 transition"><i class="fa-brands fa-paypal"></i></div>
+                        <span class="text-xs font-bold text-slate-200">PayPal</span>
+                    </button>
+
+                    <!-- Notifications / Recent Releases Dropdown -->
+                    <div class="relative">
+                        <button id="dropdown-toggle" class="p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition relative group">
+                            <i class="fa-solid fa-bell text-slate-300 group-hover:text-amber-400 transition"></i>
+                            <span class="absolute top-2 right-2 w-2.5 h-2.5 bg-brand-500 rounded-full animate-ping"></span>
+                            <span class="absolute top-2 right-2 w-2.5 h-2.5 bg-brand-500 rounded-full"></span>
+                        </button>
+                        
+                        <!-- Dropdown Menu -->
+                        <div id="courses-dropdown" class="hidden absolute right-0 mt-3 w-80 sm:w-96 glass-panel rounded-2xl shadow-2xl py-3 z-50 border border-slate-800">
+                            <div class="px-4 pb-2 border-b border-slate-800/80 flex items-center justify-between">
+                                <h4 class="font-bold text-xs uppercase tracking-wider text-slate-400 flex items-center"><i class="fa-solid fa-video text-brand-400 mr-2"></i> Recent Class Uploads</h4>
+                                <span class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">New Content</span>
+                            </div>
+                            <div class="max-h-80 overflow-y-auto custom-scrollbar divide-y divide-slate-800/60" id="dropdown-sessions-list">
+                                <!-- Dynamic Items -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cart Drawer Trigger -->
+                    <button onclick="toggleCartDrawer()" class="p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition relative">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                        <span id="cart-badge" class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gradient-to-r from-brand-500 to-indigo-600 text-white text-[11px] font-black rounded-full flex items-center justify-center shadow-lg border border-slate-900">0</span>
+                    </button>
+
+                    <!-- Student User Avatar -->
+                    <div class="flex items-center pl-2 border-l border-slate-800">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-500 to-indigo-600 text-white font-extrabold flex items-center justify-center shadow-lg ring-2 ring-brand-500/30">
+                            RC
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Drawer Navigation -->
+        <div id="mobile-menu" class="hidden md:hidden bg-slate-900 border-b border-slate-800 px-4 py-4 space-y-2">
+            <button onclick="switchView('dashboard'); toggleMobileMenu()" class="block w-full text-left px-4 py-3 rounded-xl text-slate-200 hover:bg-slate-800 font-bold">Dashboard</button>
+            <button onclick="switchView('courses'); toggleMobileMenu()" class="block w-full text-left px-4 py-3 rounded-xl text-slate-200 hover:bg-slate-800 font-bold">Course Catalog</button>
+            <button onclick="switchView('subscriptions'); toggleMobileMenu()" class="block w-full text-left px-4 py-3 rounded-xl text-slate-200 hover:bg-slate-800 font-bold">Subscription Plans</button>
+            <button onclick="openQuizModal(); toggleMobileMenu()" class="block w-full text-left px-4 py-3 rounded-xl text-emerald-400 hover:bg-slate-800 font-bold">Take Diagnostic Quiz</button>
+        </div>
+    </header>
+
+    <!-- Main Dynamic Content Container -->
+    <main class="flex-grow">
+        
+        <!-- ================= VIEW 1: MAIN DASHBOARD & HERO ================= -->
+        <section id="view-dashboard" class="view-section py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Hero Animated Section -->
+            <div class="relative rounded-3xl bg-slate-900 border border-slate-800/80 p-8 sm:p-14 mb-12 overflow-hidden shadow-2xl">
+                <!-- Floating Particle Background Canvas -->
+                <canvas id="particles-canvas"></canvas>
+
+                <!-- Glowing Ambient Light -->
+                <div class="absolute -top-20 -right-20 w-96 h-96 bg-brand-600/30 rounded-full blur-[100px] pointer-events-none animate-pulseGlow"></div>
+                <div class="absolute -bottom-20 -left-20 w-96 h-96 bg-emerald-600/20 rounded-full blur-[100px] pointer-events-none"></div>
+
+                <div class="relative z-10 max-w-3xl">
+                    <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-brand-500/10 text-brand-300 border border-brand-500/30 mb-6 backdrop-blur-md">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                        <span>Mauritius' Premier Cambridge E-Learning Hub</span>
+                    </div>
+
+                    <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white mb-6 leading-tight">
+                        Excellence in <br/>
+                        <span id="typewriter-text" class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-indigo-300 to-emerald-400"></span>
+                        <span class="animate-pulse">|</span>
+                    </h1>
+
+                    <p class="text-slate-300 text-base sm:text-lg mb-8 leading-relaxed max-w-2xl font-normal">
+                        Structured video lessons, past paper worked solutions (2015-2025), and topic revision worksheets curated by <strong class="text-white font-semibold">Ravi Choolun</strong> for Cambridge O-Level & A-Level.
+                    </p>
+
+                    <!-- Real-time Hero Search Input -->
+                    <div class="relative max-w-xl mb-6 group">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-4 text-slate-400 group-focus-within:text-brand-400 transition"></i>
+                        <input type="text" id="hero-search-input" oninput="handleHeroSearch(this.value)" placeholder="Search topic e.g. Completing the Square, Vectors, Surds..." class="w-full pl-12 pr-28 py-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent shadow-2xl backdrop-blur-md transition">
+                        <button onclick="executeHeroSearch()" class="absolute right-2 top-2 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-lg transition">
+                            Search
+                        </button>
+                        <!-- Auto suggestions container -->
+                        <div id="hero-suggestions" class="hidden absolute left-0 right-0 top-14 glass-panel rounded-2xl border border-slate-800 shadow-2xl py-2 z-30 max-h-60 overflow-y-auto"></div>
+                    </div>
+
+                    <!-- Subject Quick Filter Badges -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-xs text-slate-400 font-bold uppercase tracking-wider mr-2">Popular Subjects:</span>
+                        <button onclick="filterBySubject('Maths 4024')" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/80 text-slate-300 hover:bg-brand-600 hover:text-white border border-slate-700/60 transition">Maths (4024)</button>
+                        <button onclick="filterBySubject('Add Maths 4037')" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/80 text-slate-300 hover:bg-brand-600 hover:text-white border border-slate-700/60 transition">Add Maths (4037)</button>
+                        <button onclick="filterBySubject('Physics 5054')" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/80 text-slate-300 hover:bg-brand-600 hover:text-white border border-slate-700/60 transition">Physics (5054)</button>
+                        <button onclick="filterBySubject('Computer Science 2210')" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/80 text-slate-300 hover:bg-brand-600 hover:text-white border border-slate-700/60 transition">CS (2210)</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Animated Counter Statistics Bar -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-5 mb-14">
+                <div class="bg-slate-900/90 border border-slate-800/80 p-6 rounded-3xl shadow-xl hover:border-brand-500/50 transition group">
+                    <div class="w-12 h-12 rounded-2xl bg-brand-500/10 border border-brand-500/20 text-brand-400 flex items-center justify-center text-xl font-bold mb-4 group-hover:scale-110 transition">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <div class="text-3xl font-extrabold text-white mb-1 tracking-tight" id="stat-students">0</div>
+                    <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Students Enrolled</div>
+                </div>
+
+                <div class="bg-slate-900/90 border border-slate-800/80 p-6 rounded-3xl shadow-xl hover:border-emerald-500/50 transition group">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl font-bold mb-4 group-hover:scale-110 transition">
+                        <i class="fa-solid fa-award"></i>
+                    </div>
+                    <div class="text-3xl font-extrabold text-white mb-1 tracking-tight" id="stat-pass">0</div>
+                    <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Cambridge Distinction Rate</div>
+                </div>
+
+                <div class="bg-slate-900/90 border border-slate-800/80 p-6 rounded-3xl shadow-xl hover:border-amber-500/50 transition group">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold mb-4 group-hover:scale-110 transition">
+                        <i class="fa-solid fa-film"></i>
+                    </div>
+                    <div class="text-3xl font-extrabold text-white mb-1 tracking-tight" id="stat-videos">0</div>
+                    <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Video Recorded Modules</div>
+                </div>
+
+                <div class="bg-slate-900/90 border border-slate-800/80 p-6 rounded-3xl shadow-xl hover:border-purple-500/50 transition group">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center text-xl font-bold mb-4 group-hover:scale-110 transition">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div class="text-3xl font-extrabold text-white mb-1 tracking-tight" id="stat-support">24/7</div>
+                    <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Tutor Q&A Assistance</div>
+                </div>
+            </div>
+
+            <!-- Student Personal Learning Overview Widget -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 sm:p-8 mb-12 backdrop-blur-md">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-white flex items-center">
+                            <i class="fa-solid fa-chart-line text-brand-400 mr-2.5"></i> Personal Learning Analytics
+                        </h2>
+                        <p class="text-slate-400 text-xs mt-1">Track your watch time, completed modules, and saved bookmarks.</p>
+                    </div>
+                    <button onclick="openQuizModal()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-lg transition flex items-center w-fit">
+                        <i class="fa-solid fa-vial mr-2"></i> Take Diagnostic Test
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 flex items-center space-x-4">
+                        <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-base"><i class="fa-solid fa-clock"></i></div>
+                        <div>
+                            <div class="text-lg font-bold text-white">18.5 Hours</div>
+                            <div class="text-[11px] text-slate-500">Video Content Watched</div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 flex items-center space-x-4">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-base"><i class="fa-solid fa-circle-check"></i></div>
+                        <div>
+                            <div class="text-lg font-bold text-white" id="user-completed-count">14 Modules</div>
+                            <div class="text-[11px] text-slate-500">Completed Sessions</div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 flex items-center space-x-4">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold text-base"><i class="fa-solid fa-bookmark"></i></div>
+                        <div>
+                            <div class="text-lg font-bold text-white" id="user-bookmarks-count">3 Saved</div>
+                            <div class="text-[11px] text-slate-500">Bookmarked Lessons</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Course Catalog Header & Filters -->
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+                <div>
+                    <h2 class="text-2xl font-black text-white tracking-tight">Featured O & A Level Modules</h2>
+                    <p class="text-slate-400 text-xs">Select your grade level to access structured video lessons.</p>
+                </div>
+
+                <!-- Grade Filter Tabs -->
+                <div class="flex flex-wrap gap-2 w-full md:w-auto bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800">
+                    <button onclick="setGradeFilter('All')" class="filter-btn px-4 py-2 rounded-xl text-xs font-bold bg-brand-600 text-white shadow transition">All Grades</button>
+                    <button onclick="setGradeFilter('Grade 10')" class="filter-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition">Grade 10</button>
+                    <button onclick="setGradeFilter('Grade 11')" class="filter-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition">Grade 11 (O-Level)</button>
+                    <button onclick="setGradeFilter('A-Level')" class="filter-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition">AS/A-Level</button>
+                </div>
+            </div>
+
+            <!-- Course Grid Container -->
+            <div id="courses-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+                <!-- Dynamically Populated Cards -->
+            </div>
+
+            <!-- Instructor Spotlight Section -->
+            <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden mb-16">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center relative z-10">
+                    <div class="flex justify-center">
+                        <div class="relative">
+                            <div class="w-44 h-44 rounded-3xl bg-gradient-to-tr from-brand-500 to-indigo-600 p-1 shadow-2xl glow-brand">
+                                <img src="https://placehold.co/400x400/1e1b4b/ffffff?text=Ravi+Choolun" alt="Ravi Choolun" class="w-full h-full object-cover rounded-[22px]">
+                            </div>
+                            <span class="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-emerald-500 text-slate-950 font-black text-[10px] uppercase px-3 py-1 rounded-full shadow-lg">Lead Educator</span>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2 text-center lg:text-left">
+                        <span class="text-brand-400 text-xs font-bold uppercase tracking-widest block mb-2">Tutor Profile</span>
+                        <h3 class="text-3xl font-black text-white mb-3">Mr. Ravi Choolun</h3>
+                        <p class="text-slate-300 text-sm leading-relaxed mb-6">
+                            Over 20+ years of dedicated teaching experience guiding Mauritian students to top international rankings in Cambridge General Certificate of Education (GCE) O-Level and A-Level examinations.
+                        </p>
+                        <div class="flex flex-wrap gap-4 justify-center lg:justify-start">
+                            <button onclick="openJuiceModal()" class="bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold px-6 py-3 rounded-xl shadow-lg transition">
+                                <i class="fa-solid fa-graduation-cap mr-2"></i> Join Premium Tuition
+                            </button>
+                            <a href="#contact" onclick="switchView('contact')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-6 py-3 rounded-xl border border-slate-700 transition">
+                                Contact Tutor
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student Testimonials Slider -->
+            <div class="mb-16">
+                <div class="text-center max-w-2xl mx-auto mb-10">
+                    <h2 class="text-2xl font-black text-white">Student Success Stories</h2>
+                    <p class="text-slate-400 text-xs mt-1">Hear from candidates who achieved Grade A* in Cambridge O & A Levels.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-slate-900/80 border border-slate-800 p-6 rounded-3xl relative">
+                        <div class="flex items-center text-amber-400 text-xs mb-4">
+                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                        </div>
+                        <p class="text-slate-300 text-xs leading-relaxed mb-6">"OnlineTuition.mu made completing the square and calculus so simple. The step-by-step past paper video solutions were essential for my Grade A* in Add Maths!"</p>
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded-full bg-brand-600 font-bold text-white flex items-center justify-center text-xs">KP</div>
+                            <div>
+                                <h4 class="text-xs font-bold text-white">Kavish P.</h4>
+                                <span class="text-[10px] text-slate-500">Royal College Curepipe</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900/80 border border-slate-800 p-6 rounded-3xl relative">
+                        <div class="flex items-center text-amber-400 text-xs mb-4">
+                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                        </div>
+                        <p class="text-slate-300 text-xs leading-relaxed mb-6">"Being able to replay physics practical sessions and download structured worksheets allowed me to revise on my own schedule."</p>
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded-full bg-emerald-600 font-bold text-white flex items-center justify-center text-xs">SR</div>
+                            <div>
+                                <h4 class="text-xs font-bold text-white">Sophie R.</h4>
+                                <span class="text-[10px] text-slate-500">QEC Rose Hill</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900/80 border border-slate-800 p-6 rounded-3xl relative">
+                        <div class="flex items-center text-amber-400 text-xs mb-4">
+                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                        </div>
+                        <p class="text-slate-300 text-xs leading-relaxed mb-6">"MCB Juice payment was instant and customer support guided me right away. Highly recommended for O-Level revisions!"</p>
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded-full bg-indigo-600 font-bold text-white flex items-center justify-center text-xs">AD</div>
+                            <div>
+                                <h4 class="text-xs font-bold text-white">Alvin D.</h4>
+                                <span class="text-[10px] text-slate-500">St. Joseph's College</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= VIEW 2: COURSE CATALOG ================= -->
+        <section id="view-courses" class="view-section hidden py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="mb-8">
+                <h2 class="text-3xl font-black text-white">Full Syllabus Catalog</h2>
+                <p class="text-slate-400 text-sm">Browse all published modules across Mathematics, Physics, and Computer Science.</p>
+            </div>
+            
+            <div id="full-catalog-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                <!-- Dynamically Filled -->
+            </div>
+        </section>
+
+        <!-- ================= VIEW 3: SUBSCRIPTIONS & PRICING ================= -->
+        <section id="view-subscriptions" class="view-section hidden py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <span class="text-brand-400 font-bold text-xs uppercase tracking-widest bg-brand-500/10 border border-brand-500/20 px-3 py-1 rounded-full">Transparent Pricing</span>
+                <h2 class="text-3xl sm:text-5xl font-black text-white mt-4 mb-4">Flexible Mauritian Learning Plans</h2>
+                <p class="text-slate-400 text-sm">Choose an option that aligns with your Cambridge exam timeline. Unlimited video stream access and downloadable revision packages.</p>
+                
+                <!-- Billing Toggle Switch -->
+                <div class="flex items-center justify-center mt-8 space-x-4">
+                    <span class="text-xs font-bold text-slate-300" id="billing-monthly-label">Monthly Billing</span>
+                    <button id="billing-toggle" onclick="toggleBillingPeriod()" class="w-14 h-8 bg-slate-800 rounded-full p-1 border border-slate-700 relative transition">
+                        <div id="billing-toggle-dot" class="w-6 h-6 bg-brand-500 rounded-full transition transform translate-x-0"></div>
+                    </button>
+                    <span class="text-xs font-bold text-slate-400" id="billing-annual-label">Termly Pass <span class="bg-emerald-500/20 text-emerald-400 text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/30">Save 25%</span></span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mb-16">
+                <!-- Plan 1 -->
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 flex flex-col justify-between hover:border-slate-700 transition relative">
+                    <div>
+                        <div class="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase bg-slate-800 text-slate-300 mb-4">Starter</div>
+                        <h3 class="text-2xl font-bold text-white mb-2">Monthly Pass</h3>
+                        <p class="text-slate-400 text-xs mb-6">Great for targeted topic revisions before tests.</p>
+                        <div class="flex items-baseline mb-6">
+                            <span class="text-4xl font-black text-white" id="plan-monthly-price">Rs 1,500</span>
+                            <span class="text-slate-400 text-xs ml-2">/ month</span>
+                        </div>
+                        <ul class="space-y-3 mb-8 text-xs text-slate-300">
+                            <li class="flex items-center"><i class="fa-solid fa-check text-emerald-400 mr-3"></i> Complete access to selected grade lessons</li>
+                            <li class="flex items-center"><i class="fa-solid fa-check text-emerald-400 mr-3"></i> Downloadable PDF exercise sheets</li>
+                            <li class="flex items-center"><i class="fa-solid fa-check text-emerald-400 mr-3"></i> Standard 1080p HD Streaming</li>
+                        </ul>
+                    </div>
+                    <button onclick="subscribePlan('Monthly Pass', 1500)" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-2xl transition">
+                        Select Monthly Pass
+                    </button>
+                </div>
+
+                <!-- Plan 2 (Highlighted) -->
+                <div class="bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 border-2 border-brand-500 rounded-3xl p-8 flex flex-col justify-between relative shadow-2xl transform lg:-translate-y-2 glow-brand">
+                    <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-brand-500 to-indigo-600 text-white px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow">
+                        Recommended for Cambridge Exams
+                    </div>
+                    <div>
+                        <div class="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase bg-brand-500/20 text-brand-300 mb-4">Term Pass</div>
+                        <h3 class="text-2xl font-bold text-white mb-2">Full Term Bundle</h3>
+                        <p class="text-slate-400 text-xs mb-6">Designed for 4-month continuous term preparation.</p>
+                        <div class="flex items-baseline mb-6">
+                            <span class="text-4xl font-black text-white" id="plan-term-price">Rs 4,000</span>
+                            <span class="text-slate-400 text-xs ml-2">/ term</span>
+                        </div>
+                        <ul class="space-y-3 mb-8 text-xs text-slate-200">
+                            <li class="flex items-center"><i class="fa-solid fa-check text-brand-400 mr-3"></i> Everything in Monthly Pass</li>
+                            <li class="flex items-center"><i class="fa-solid fa-check text-brand-400 mr-3"></i> 2018-2024 Specimen Paper walkthroughs</li>
+                            <li class="flex items-center"><i class="fa-solid fa-check text-brand-400 mr-3"></i> Direct Tutor Q&A Priority Answer</li>
+                            <li class="flex items-center"><i class="fa-solid fa-check text-brand-400 mr-3"></i> Save Rs 2,000 overall</li>
+                        </ul>
+                    </div>
+                    <button onclick="subscribePlan('Full Term Bundle', 4000)" class="w-full bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold py-3.5 rounded-2xl shadow-lg transition">
+                        Select Term Bundle
+                    </button>
+                </div>
+
+                <!-- Plan 3 -->
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 flex flex-col justify-between hover:border-slate-700 transition relative">
+                    <div>
+                        <div class="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase bg-purple-500/20 text-purple-300 mb-4">Annual Pass</div>
+                        <h3 class="text-2xl font-bold text-white mb-2">Full Academic Year</h3>
+                        <p class="text-slate-400 text-xs mb-6">12 months of complete Cambridge preparation.</p>
+                        <div class="flex items-baseline mb-6">
+                            <span class="text-4xl font-black text-white" id="plan-annual-price">Rs 12,000</span>
+                            <span class="text-slate-400 text-xs ml-2">/ year</span>
+                        </div>
+                        <ul class="space-y-3 mb-8 text-xs text-slate-300">
+                            <li class="flex items-center"><i class="fa-solid fa-check text-emerald-400 mr-3"></i> Complete Grades 8 to 13 Library</li>
+                            <li class="flex items-center"><i class="fa-solid fa-check text-emerald-400 mr-3"></i> Mock examination paper corrections</li>
+                            <li class="flex items-center"><i class="fa-solid fa-check text-emerald-400 mr-3"></i> 1-on-1 exam strategy session</li>
+                        </ul>
+                    </div>
+                    <button onclick="subscribePlan('Full Academic Year', 12000)" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-2xl transition">
+                        Select Annual Pass
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= VIEW 4: CONTACT & SUPPORT ================= -->
+        <section id="view-contact" class="view-section hidden py-12 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 sm:p-12 shadow-2xl">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-black text-white mb-2">Get in Touch</h2>
+                    <p class="text-slate-400 text-xs">Questions regarding schedules, tuition fees, or course enrollment?</p>
+                </div>
+
+                <form onsubmit="handleContactSubmit(event)" class="space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Student / Parent Name</label>
+                            <input type="text" required placeholder="e.g. Jean Dupont" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Email Address</label>
+                            <input type="email" required placeholder="jean@example.mu" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Subject / Grade</label>
+                        <input type="text" required placeholder="e.g. Grade 11 Mathematics 4024" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Message</label>
+                        <textarea rows="4" required placeholder="Write your inquiry here..." class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+                    </div>
+                    <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3.5 rounded-xl shadow-lg transition">
+                        Send Inquiry
+                    </button>
+                </form>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ================= RICH CLASSROOM VIDEO PLAYER MODAL ================= -->
+    <div id="course-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-2 sm:p-6 overflow-y-auto">
+        <div id="modal-container-box" class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-6xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] transition-all duration-300">
+            
+            <!-- Player Top Header Bar -->
+            <div class="bg-slate-950 px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <span id="modal-grade-badge" class="text-[10px] font-black uppercase tracking-widest bg-brand-500/20 text-brand-300 border border-brand-500/30 px-3 py-1 rounded-full">Grade 11</span>
+                    <h3 id="modal-course-title" class="text-base sm:text-lg font-bold text-white truncate max-w-md">Completing the Square</h3>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="toggleTheaterMode()" title="Toggle Theater Mode" class="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800"><i class="fa-solid fa-expand"></i></button>
+                    <button onclick="closeCourseModal()" class="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+            </div>
+
+            <!-- Modal Content Layout -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 flex-grow overflow-y-auto">
+                <!-- Left 2 Cols: Custom Interactive Video Frame & Lesson Tabs -->
+                <div class="lg:col-span-2 p-6 border-r border-slate-800/80 flex flex-col justify-between">
+                    <div>
+                        <!-- Custom Animated Video Player Simulation Frame -->
+                        <div class="relative rounded-2xl bg-slate-950 overflow-hidden aspect-video shadow-2xl mb-6 group border border-slate-800 flex items-center justify-center" id="video-player-frame">
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent flex flex-col justify-between p-6 z-10">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs bg-slate-900/80 border border-slate-700/80 text-slate-200 px-3 py-1 rounded-full backdrop-blur"><i class="fa-solid fa-circle text-red-500 text-[8px] mr-1.5 animate-pulse"></i> Cambridge O-Level HD Recorded Session</span>
+                                    <span class="text-xs font-mono text-slate-300" id="video-time-display">00:00 / 24:15</span>
+                                </div>
+
+                                <div class="text-center">
+                                    <button onclick="togglePlaySimulation()" id="play-btn-main" class="w-20 h-20 bg-brand-600/90 hover:bg-brand-500 text-white rounded-full flex items-center justify-center text-3xl shadow-2xl backdrop-blur transition transform group-hover:scale-110">
+                                        <i class="fa-solid fa-play ml-1" id="play-icon-symbol"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Player Bottom Controls Bar -->
+                                <div class="flex items-center justify-between text-xs text-slate-300 space-x-4 bg-slate-900/90 p-3 rounded-2xl border border-slate-800 backdrop-blur">
+                                    <button onclick="togglePlaySimulation()"><i class="fa-solid fa-play" id="play-icon-sub"></i></button>
+                                    
+                                    <!-- Progress Bar -->
+                                    <div class="flex-grow h-1.5 bg-slate-800 rounded-full cursor-pointer overflow-hidden relative" onclick="seekVideo(event)">
+                                        <div id="video-progress-fill" class="h-full bg-gradient-to-r from-brand-500 to-indigo-500 w-0 transition-all duration-300"></div>
+                                    </div>
+
+                                    <!-- Speed Selector -->
+                                    <select id="speed-selector" onchange="changePlaybackSpeed(this.value)" class="bg-slate-950 border border-slate-800 text-white text-[11px] rounded-lg px-2 py-1 font-bold focus:outline-none">
+                                        <option value="1">1.0x Speed</option>
+                                        <option value="1.25">1.25x Speed</option>
+                                        <option value="1.5">1.5x Speed</option>
+                                        <option value="2">2.0x Speed</option>
+                                    </select>
+
+                                    <!-- Bookmark timestamp button -->
+                                    <button onclick="addBookmarkNote()" title="Add Bookmark Note" class="hover:text-amber-400"><i class="fa-solid fa-bookmark"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Classroom Tabs Header -->
+                        <div class="flex space-x-2 border-b border-slate-800/80 pb-3 mb-4 overflow-x-auto">
+                            <button onclick="switchModalTab('notes')" id="tab-btn-notes" class="px-4 py-2 rounded-xl text-xs font-bold bg-brand-500/10 text-brand-400 border border-brand-500/30 transition flex-shrink-0">Lesson Notes</button>
+                            <button onclick="switchModalTab('worksheet')" id="tab-btn-worksheet" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition flex-shrink-0">PDF Worksheets</button>
+                            <button onclick="switchModalTab('qa')" id="tab-btn-qa" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition flex-shrink-0">Student Discussion</button>
+                            <button onclick="switchModalTab('bookmarks')" id="tab-btn-bookmarks" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition flex-shrink-0">My Bookmarks</button>
+                        </div>
+
+                        <!-- Tab Content 1: Lesson Notes -->
+                        <div id="tab-content-notes" class="space-y-3 text-xs text-slate-300">
+                            <h4 class="font-bold text-white text-sm">Key Concepts Covered</h4>
+                            <p class="leading-relaxed">In this session, Mr. Ravi Choolun breaks down how to express standard quadratics in vertex form $a(x-h)^2 + k$, identifying turning points, and applying these concepts to Cambridge exam paper 1 & paper 2 problems.</p>
+                        </div>
+
+                        <!-- Tab Content 2: PDF Worksheets -->
+                        <div id="tab-content-worksheet" class="hidden space-y-3">
+                            <div class="flex items-center justify-between p-4 bg-slate-950 border border-slate-800 rounded-2xl">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-red-500/20 text-red-400 rounded-xl flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-file-pdf text-lg"></i></div>
+                                    <div>
+                                        <div class="font-bold text-xs text-white">Completing_The_Square_Worksheet.pdf</div>
+                                        <div class="text-[10px] text-slate-500">2.4 MB &bull; 15 Practice Questions</div>
+                                    </div>
+                                </div>
+                                <button onclick="triggerPDFDownload()" class="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow transition">
+                                    <i class="fa-solid fa-download mr-1.5"></i> Download PDF
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tab Content 3: Discussion Q&A -->
+                        <div id="tab-content-qa" class="hidden space-y-4">
+                            <div class="space-y-3 max-h-40 overflow-y-auto custom-scrollbar pr-2" id="qa-comments-container">
+                                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs">
+                                    <span class="font-bold text-white block mb-1">Rohan M.</span>
+                                    <p class="text-slate-400">Sir, why do we divide the coefficient of x by 2 before squaring?</p>
+                                </div>
+                                <div class="bg-brand-950/40 p-3 rounded-xl border border-brand-800/40 text-xs ml-4">
+                                    <span class="font-bold text-brand-300 block mb-1">Mr. Ravi Choolun (Tutor)</span>
+                                    <p class="text-slate-300">Because expanding $(x + a)^2$ gives $x^2 + 2ax + a^2$. The middle term has a factor of 2!</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <input type="text" id="qa-input-field" placeholder="Ask a question about this topic..." class="flex-grow px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
+                                <button onclick="postQAComment()" class="bg-brand-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold">Post</button>
+                            </div>
+                        </div>
+
+                        <!-- Tab Content 4: Bookmarks -->
+                        <div id="tab-content-bookmarks" class="hidden space-y-2">
+                            <div id="bookmarks-list" class="space-y-2 text-xs">
+                                <div class="text-slate-500 text-center py-4">No timestamp notes saved yet. Click the bookmark icon in the video controls!</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Completion Action Bar -->
+                    <div class="pt-6 border-t border-slate-800/80 mt-6 flex items-center justify-between">
+                        <span id="modal-completion-status" class="text-xs font-bold text-slate-400">Status: In Progress</span>
+                        <button onclick="toggleCourseCompleted()" id="modal-complete-btn" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg transition">
+                            <i class="fa-solid fa-check mr-2"></i> Mark as Completed
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Col: Course Syllabus Modules Accordion -->
+                <div class="p-6 bg-slate-950/60 flex flex-col">
+                    <h4 class="font-bold text-xs uppercase tracking-wider text-slate-400 mb-4 flex items-center">
+                        <i class="fa-solid fa-layer-group text-brand-400 mr-2"></i> Lesson Playlist Modules
+                    </h4>
+                    <div class="space-y-2 overflow-y-auto flex-grow max-h-[420px] custom-scrollbar pr-1" id="modal-syllabus-accordion">
+                        <!-- Filled dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= INTERACTIVE DIAGNOSTIC QUIZ MODAL ================= -->
+    <div id="quiz-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-xl p-8 shadow-2xl relative">
+            <button onclick="closeQuizModal()" class="absolute top-6 right-6 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+
+            <div class="mb-6">
+                <span class="text-emerald-400 font-bold text-[10px] uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">Diagnostic Assessment</span>
+                <h3 class="text-2xl font-black text-white mt-2">Cambridge O-Level Quick Quiz</h3>
+                <p class="text-slate-400 text-xs mt-1">Test your concepts in 3 rapid exam questions.</p>
+            </div>
+
+            <div id="quiz-body" class="space-y-6">
+                <!-- Dynamic Quiz Step Content -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MCB JUICE PAYMENT MODAL ================= -->
+    <div id="juice-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-8 shadow-2xl relative text-center">
+            <button onclick="closeJuiceModal()" class="absolute top-6 right-6 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            
+            <div class="w-16 h-16 bg-red-600 text-white rounded-2xl flex items-center justify-center text-2xl font-black mx-auto mb-4 shadow-xl">MCB</div>
+            <h3 class="text-2xl font-bold text-white mb-2">MCB Juice Mauritius</h3>
+            <p class="text-slate-400 text-xs mb-6">Transfer to merchant account <strong class="text-white">5982 3411 00</strong> (OnlineTuition.mu) or scan QR below.</p>
+            
+            <div class="bg-slate-950 p-6 rounded-2xl mb-6 flex flex-col items-center border border-slate-800">
+                <div class="w-44 h-44 bg-white p-3 rounded-2xl shadow-inner flex items-center justify-center mb-3">
+                    <i class="fa-solid fa-qrcode text-8xl text-slate-900"></i>
+                </div>
+                <span class="text-[11px] font-mono text-slate-400">Merchant Ref: OT-MU-2026</span>
+            </div>
+
+            <div class="mb-6 text-left">
+                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-2">Enter Juice Reference Number</label>
+                <input type="text" id="juice-ref-code" placeholder="e.g. JUC-8841029" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
+            </div>
+
+            <button onclick="verifyJuicePayment()" class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold py-3.5 rounded-xl shadow-lg transition">
+                Verify & Activate
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= PAYPAL MODAL ================= -->
+    <div id="paypal-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-8 shadow-2xl relative text-center">
+            <button onclick="closePayPalModal()" class="absolute top-6 right-6 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div class="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center text-3xl font-bold mx-auto mb-4 shadow-xl"><i class="fa-brands fa-paypal"></i></div>
+            <h3 class="text-2xl font-bold text-white mb-2">PayPal International</h3>
+            <p class="text-slate-400 text-xs mb-6">Pay securely with Credit/Debit Card or PayPal account.</p>
+            <button onclick="verifyPayPalPayment()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl shadow-lg transition">
+                Proceed to PayPal Checkout
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= SHOPPING CART DRAWER ================= -->
+    <div id="cart-drawer" class="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-slate-900 border-l border-slate-800 shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col">
+        <div class="bg-slate-950 px-6 py-5 border-b border-slate-800 flex items-center justify-between">
+            <h3 class="font-bold text-base text-white flex items-center"><i class="fa-solid fa-basket-shopping text-brand-400 mr-2.5"></i> Shopping Cart</h3>
+            <button onclick="toggleCartDrawer()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+        
+        <div class="p-6 flex-grow overflow-y-auto divide-y divide-slate-800/60 custom-scrollbar" id="cart-drawer-items">
+            <!-- Dynamic items -->
+        </div>
+
+        <div class="p-6 border-t border-slate-800 bg-slate-950 space-y-4">
+            <!-- Promo Code Input -->
+            <div class="flex gap-2">
+                <input type="text" id="promo-code-input" placeholder="Promo code (e.g. MAURITIUS2026)" class="flex-grow px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white uppercase placeholder-slate-500">
+                <button onclick="applyPromoCode()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-xs font-bold border border-slate-700">Apply</button>
+            </div>
+
+            <div class="space-y-2 text-xs text-slate-400">
+                <div class="flex justify-between">
+                    <span>Subtotal</span>
+                    <span id="cart-subtotal-text" class="text-white font-bold">Rs 0</span>
+                </div>
+                <div class="flex justify-between text-emerald-400" id="promo-discount-row" style="display:none">
+                    <span>Promo Discount (20%)</span>
+                    <span id="cart-discount-text">-Rs 0</span>
+                </div>
+                <div class="flex justify-between text-base font-bold text-white border-t border-slate-800 pt-2">
+                    <span>Total Amount</span>
+                    <span id="cart-total-text" class="text-brand-400">Rs 0</span>
+                </div>
+            </div>
+
+            <button onclick="processCartCheckout()" class="w-full bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold py-3.5 rounded-xl shadow-lg transition">
+                Proceed to Checkout
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-900 text-slate-500 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-8 h-8 rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold text-sm">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                        </div>
+                        <span class="text-base font-bold text-white">OnlineTuition<span class="text-brand-400">.mu</span></span>
+                    </div>
+                    <p class="text-xs text-slate-400 leading-relaxed">Mauritius premier Cambridge e-learning portal for Grade 8 to 13 students. Direct exam preparation and video solutions.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-xs uppercase tracking-wider text-slate-300 mb-3">Navigation</h4>
+                    <ul class="space-y-2 text-xs">
+                        <li><a href="#dashboard" onclick="switchView('dashboard')" class="hover:text-white">Dashboard</a></li>
+                        <li><a href="#courses" onclick="switchView('courses')" class="hover:text-white">Course Catalog</a></li>
+                        <li><a href="#subscriptions" onclick="switchView('subscriptions')" class="hover:text-white">Subscription Plans</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-xs uppercase tracking-wider text-slate-300 mb-3">Cambridge Syllabi</h4>
+                    <ul class="space-y-2 text-xs">
+                        <li>Mathematics Syllabus D (4024 / 4029)</li>
+                        <li>Additional Mathematics (4037)</li>
+                        <li>Physics (5054)</li>
+                        <li>Computer Science (2210)</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-xs uppercase tracking-wider text-slate-300 mb-3">Local Payment Support</h4>
+                    <div class="flex space-x-2">
+                        <span class="bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 text-xs font-bold text-slate-300">MCB Juice</span>
+                        <span class="bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 text-xs font-bold text-slate-300">PayPal</span>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-slate-900 pt-6 text-center text-xs text-slate-600">
+                &copy; 2026 OnlineTuition.mu. All rights reserved. Registered Educational Provider Mauritius.
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // --- DATA STRUCTURES ---
+        const coursesData = [
+            { id: 1, title: "Session 73: Completing the Square - Quadratic Functions", grade: "Grade 11", subject: "Maths 4024", image: "https://placehold.co/600x400/312e81/ffffff?text=Completing+The+Square", progress: 100, completed: true, price: 500 },
+            { id: 2, title: "Session 72: Simple & Compound Interest - Financial Maths", grade: "Grade 11", subject: "Maths 4024", image: "https://placehold.co/600x400/065f46/ffffff?text=Interest+Calculations", progress: 100, completed: true, price: 500 },
+            { id: 3, title: "Session 71: Miscellaneous Concepts & Exam Pitfalls", grade: "Grade 11", subject: "Maths 4024", image: "https://placehold.co/600x400/4c1d95/ffffff?text=Misc+Concepts", progress: 60, completed: false, price: 500 },
+            { id: 4, title: "Session 70: Set Theory, Venn Diagrams & Shading", grade: "Grade 10", subject: "Maths 4024", image: "https://placehold.co/600x400/831843/ffffff?text=Set+Theory", progress: 30, completed: false, price: 500 },
+            { id: 5, title: "Session 69: Surds Operations & Homework Correction", grade: "Grade 10", subject: "Add Maths 4037", image: "https://placehold.co/600x400/701a75/ffffff?text=Surds+Mastery", progress: 0, completed: false, price: 600 },
+            { id: 6, title: "Session 68: Vectors in 2D & Geometric Proofs", grade: "Grade 10", subject: "Maths 4024", image: "https://placehold.co/600x400/1e3a8a/ffffff?text=Vectors+2D", progress: 0, completed: false, price: 500 },
+            { id: 7, title: "Session 67: Kinematics - Displacement & Velocity Graphs", grade: "A-Level", subject: "Physics 5054", image: "https://placehold.co/600x400/064e3b/ffffff?text=Kinematics+Graphs", progress: 0, completed: false, price: 800 },
+            { id: 8, title: "Session 66: Python Data Structures & Algorithmic Complexity", grade: "A-Level", subject: "Computer Science 2210", image: "https://placehold.co/600x400/312e81/ffffff?text=Python+Algorithms", progress: 0, completed: false, price: 800 }
+        ];
+
+        const quizQuestions = [
+            {
+                q: "What is the vertex form of $x^2 - 6x + 11$?",
+                options: ["$(x - 3)^2 + 2$", "$(x - 3)^2 + 11$", "$(x + 3)^2 + 2$", "$(x - 6)^2 + 2$"],
+                answer: 0,
+                explanation: "Completing the square: $(x - 3)^2 - 9 + 11 = (x - 3)^2 + 2$."
+            },
+            {
+                q: "If $2^x = 32$, what is the value of $x$?",
+                options: ["3", "4", "5", "6"],
+                answer: 2,
+                explanation: "$2^5 = 32$, so $x = 5$."
+            },
+            {
+                q: "Which instrument measures electric current in a circuit?",
+                options: ["Voltmeter", "Ammeter", "Ohmmeter", "Galvanometer"],
+                answer: 1,
+                explanation: "An ammeter is connected in series to measure electric current in Amperes."
+            }
+        ];
+
+        let state = {
+            currentGradeFilter: 'All',
+            cart: JSON.parse(localStorage.getItem('onlinetuition_cart')) || [],
+            promoApplied: false,
+            activeCourseId: 1,
+            isPlaying: false,
+            videoProgress: 25,
+            bookmarks: [],
+            quizStep: 0,
+            quizScore: 0,
+            billingPeriod: 'monthly' // or 'annual'
+        };
+
+        // --- TYPEWRITER & PARTICLE CANVAS ---
+        const typePhrases = ["Mathematics 4024", "Physics 5054", "Additional Maths 4037", "Computer Science 2210"];
+        let typeIdx = 0, charIdx = 0, isDeleting = false;
+
+        function typeWriter() {
+            const currentPhrase = typePhrases[typeIdx];
+            const el = document.getElementById('typewriter-text');
+            if(!el) return;
+
+            if (isDeleting) {
+                el.textContent = currentPhrase.substring(0, charIdx - 1);
+                charIdx--;
+            } else {
+                el.textContent = currentPhrase.substring(0, charIdx + 1);
+                charIdx++;
+            }
+
+            let typeSpeed = isDeleting ? 40 : 80;
+
+            if (!isDeleting && charIdx === currentPhrase.length) {
+                typeSpeed = 2000;
+                isDeleting = true;
+            } else if (isDeleting && charIdx === 0) {
+                isDeleting = false;
+                typeIdx = (typeIdx + 1) % typePhrases.length;
+                typeSpeed = 500;
+            }
+
+            setTimeout(typeWriter, typeSpeed);
+        }
+
+        function initParticles() {
+            const canvas = document.getElementById('particles-canvas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let width = canvas.width = canvas.offsetWidth;
+            let height = canvas.height = canvas.offsetHeight;
+
+            const particles = Array.from({ length: 30 }, () => ({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                radius: Math.random() * 2 + 1,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: (Math.random() - 0.5) * 0.5,
+                alpha: Math.random() * 0.5 + 0.2
+            }));
+
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 0 || p.x > width) p.vx *= -1;
+                    if (p.y < 0 || p.y > height) p.vy *= -1;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(99, 102, 241, ${p.alpha})`;
+                    ctx.fill();
+                });
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        function animateCounters() {
+            const animateValue = (id, start, end, duration, suffix = '') => {
+                const obj = document.getElementById(id);
+                if (!obj) return;
+                let startTimestamp = null;
+                const step = (timestamp) => {
+                    if (!startTimestamp) startTimestamp = timestamp;
+                    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                    obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString() + suffix;
+                    if (progress < 1) {
+                        window.requestAnimationFrame(step);
+                    }
+                };
+                window.requestAnimationFrame(step);
+            };
+
+            animateValue("stat-students", 0, 15400, 2000, "+");
+            animateValue("stat-pass", 0, 98, 2000, "%");
+            animateValue("stat-videos", 0, 450, 2000, "+");
+        }
+
+        // --- LIFECYCLE INIT ---
+        window.onload = function() {
+            typeWriter();
+            initParticles();
+            animateCounters();
+            renderCourses();
+            renderDropdownSessions();
+            updateCartUI();
+
+            // Toggle dropdown handler
+            const dropToggle = document.getElementById('dropdown-toggle');
+            const dropMenu = document.getElementById('courses-dropdown');
+            dropToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropMenu.classList.toggle('hidden');
+            });
+            document.addEventListener('click', () => dropMenu.classList.add('hidden'));
+            dropMenu.addEventListener('click', (e) => e.stopPropagation());
+        };
+
+        // --- VIEW NAVIGATION ---
+        function switchView(viewName) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.className = "nav-btn px-4 py-2 rounded-xl hover:text-white hover:bg-slate-800/60 transition";
+            });
+            const activeNav = document.getElementById(`nav-${viewName}`);
+            if(activeNav) activeNav.className = "nav-btn px-4 py-2 rounded-xl text-white bg-slate-800/80 hover:bg-slate-800 transition";
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            if(viewName === 'courses') {
+                renderFullCatalog();
+            }
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        }
+
+        // --- RENDER COURSES & CATALOG ---
+        function renderCourses() {
+            const container = document.getElementById('courses-container');
+            container.innerHTML = '';
+
+            const filtered = coursesData.filter(c => state.currentGradeFilter === 'All' || c.grade === state.currentGradeFilter);
+
+            filtered.forEach(course => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-800/80 rounded-3xl overflow-hidden shadow-xl hover:border-brand-500/50 hover:shadow-2xl transition duration-300 flex flex-col justify-between group";
+                card.innerHTML = `
+                    <div>
+                        <div class="relative overflow-hidden aspect-video bg-slate-950">
+                            <img src="${course.image}" alt="${course.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                            <span class="absolute top-3 left-3 bg-slate-950/80 backdrop-blur text-white text-[10px] font-black uppercase px-3 py-1 rounded-full border border-slate-800">${course.grade}</span>
+                            <span class="absolute top-3 right-3 bg-brand-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow">${course.subject}</span>
+                        </div>
+                        <div class="p-6">
+                            <h3 class="font-bold text-sm text-white mb-3 line-clamp-2 leading-snug">${course.title}</h3>
+                            <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden mb-2 border border-slate-800">
+                                <div class="bg-gradient-to-r from-brand-500 to-indigo-500 h-full rounded-full transition-all duration-500" style="width: ${course.progress}%"></div>
+                            </div>
+                            <div class="flex justify-between text-[11px] text-slate-400 font-semibold">
+                                <span>Completion</span>
+                                <span>${course.progress}%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6 pt-0 flex items-center space-x-3">
+                        <button onclick="openCourseModal(${course.id})" class="flex-grow bg-brand-600 hover:bg-brand-500 text-white font-bold py-2.5 rounded-xl text-xs shadow-lg transition text-center flex items-center justify-center">
+                            <i class="fa-solid fa-play text-[10px] mr-2"></i> Watch Class
+                        </button>
+                        <button onclick="addToCart(${course.id})" class="p-2.5 bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl border border-slate-800 transition" title="Add to Cart">
+                            <i class="fa-solid fa-cart-plus"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderFullCatalog() {
+            const container = document.getElementById('full-catalog-grid');
+            container.innerHTML = '';
+            coursesData.forEach(course => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-800 rounded-3xl p-5 flex items-center space-x-4";
+                card.innerHTML = `
+                    <img src="${course.image}" class="w-20 h-20 rounded-2xl object-cover flex-shrink-0">
+                    <div class="flex-grow min-w-0">
+                        <span class="text-[10px] font-bold text-brand-400 uppercase">${course.grade} &bull; ${course.subject}</span>
+                        <h4 class="font-bold text-xs text-white truncate mt-1">${course.title}</h4>
+                        <div class="mt-3 flex items-center justify-between">
+                            <span class="text-xs font-black text-white">Rs ${course.price}</span>
+                            <button onclick="openCourseModal(${course.id})" class="text-xs bg-brand-600 hover:bg-brand-500 text-white px-3 py-1.5 rounded-lg font-bold">Launch</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderDropdownSessions() {
+            const list = document.getElementById('dropdown-sessions-list');
+            list.innerHTML = '';
+            coursesData.slice(0, 4).forEach(c => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <a href="#" onclick="openCourseModal(${c.id}); event.preventDefault();" class="flex items-center p-3 hover:bg-slate-800/60 transition">
+                        <img src="${c.image}" class="w-10 h-10 rounded-xl object-cover mr-3 flex-shrink-0">
+                        <div class="flex-grow min-w-0">
+                            <div class="text-xs font-bold text-white truncate">${c.title}</div>
+                            <div class="text-[10px] text-slate-400">${c.grade}</div>
+                        </div>
+                    </a>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function setGradeFilter(grade) {
+            state.currentGradeFilter = grade;
+            renderCourses();
+        }
+
+        function filterBySubject(subj) {
+            showToast(`Filtering lessons for ${subj}`, "info");
+            switchView('courses');
+        }
+
+        // --- SEARCH ENGINE ---
+        function handleHeroSearch(val) {
+            const suggestions = document.getElementById('hero-suggestions');
+            if (!val.trim()) {
+                suggestions.classList.add('hidden');
+                return;
+            }
+            const matches = coursesData.filter(c => c.title.toLowerCase().includes(val.toLowerCase()) || c.subject.toLowerCase().includes(val.toLowerCase()));
+            if(matches.length === 0) {
+                suggestions.innerHTML = `<div class="px-4 py-2 text-xs text-slate-500">No topic matches found.</div>`;
+            } else {
+                suggestions.innerHTML = matches.map(m => `
+                    <div onclick="openCourseModal(${m.id})" class="px-4 py-2.5 hover:bg-slate-800/80 cursor-pointer text-xs text-white flex justify-between items-center">
+                        <span class="font-bold truncate">${m.title}</span>
+                        <span class="text-[10px] bg-brand-500/20 text-brand-300 px-2 py-0.5 rounded-full ml-2">${m.grade}</span>
+                    </div>
+                `).join('');
+            }
+            suggestions.classList.remove('hidden');
+        }
+
+        function executeHeroSearch() {
+            const val = document.getElementById('hero-search-input').value;
+            if(val) {
+                state.currentGradeFilter = 'All';
+                renderCourses();
+                document.getElementById('courses-container').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // --- CART MANAGEMENT & PROMO CODES ---
+        function addToCart(courseId) {
+            const item = coursesData.find(c => c.id === courseId);
+            if(state.cart.some(c => c.id === courseId)) {
+                showToast("Course already in cart!", "info");
+                return;
+            }
+            state.cart.push(item);
+            localStorage.setItem('onlinetuition_cart', JSON.stringify(state.cart));
+            updateCartUI();
+            showToast(`Added "${item.title}" to cart!`, "success");
+        }
+
+        function removeFromCart(courseId) {
+            state.cart = state.cart.filter(c => c.id !== courseId);
+            localStorage.setItem('onlinetuition_cart', JSON.stringify(state.cart));
+            updateCartUI();
+            showToast("Item removed from cart.", "info");
+        }
+
+        function updateCartUI() {
+            document.getElementById('cart-badge').textContent = state.cart.length;
+            const container = document.getElementById('cart-drawer-items');
+            container.innerHTML = '';
+
+            let subtotal = 0;
+            if (state.cart.length === 0) {
+                container.innerHTML = `<div class="py-12 text-center text-slate-500 text-xs">Your shopping cart is empty.</div>`;
+            } else {
+                state.cart.forEach(item => {
+                    subtotal += item.price;
+                    const div = document.createElement('div');
+                    div.className = "py-4 flex items-center justify-between";
+                    div.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <img src="${item.image}" class="w-12 h-12 rounded-xl object-cover">
+                            <div>
+                                <h4 class="font-bold text-xs text-white line-clamp-1">${item.title}</h4>
+                                <span class="text-xs text-brand-400 font-bold">Rs ${item.price}</span>
+                            </div>
+                        </div>
+                        <button onclick="removeFromCart(${item.id})" class="text-slate-500 hover:text-red-400"><i class="fa-solid fa-trash text-xs"></i></button>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+
+            const discount = state.promoApplied ? subtotal * 0.2 : 0;
+            const total = subtotal - discount;
+
+            document.getElementById('cart-subtotal-text').textContent = `Rs ${subtotal}`;
+            document.getElementById('cart-discount-text').textContent = `-Rs ${discount}`;
+            document.getElementById('cart-total-text').textContent = `Rs ${total}`;
+            document.getElementById('promo-discount-row').style.display = state.promoApplied ? 'flex' : 'none';
+        }
+
+        function applyPromoCode() {
+            const code = document.getElementById('promo-code-input').value.trim().toUpperCase();
+            if (code === 'MAURITIUS2026') {
+                state.promoApplied = true;
+                updateCartUI();
+                showToast("Promo Code Applied! 20% Discount unlocked.", "success");
+            } else {
+                showToast("Invalid Promo Code. Try MAURITIUS2026", "error");
+            }
+        }
+
+        function toggleCartDrawer() {
+            document.getElementById('cart-drawer').classList.toggle('translate-x-full');
+        }
+
+        function processCartCheckout() {
+            if(state.cart.length === 0) {
+                showToast("Your cart is empty!", "error");
+                return;
+            }
+            openJuiceModal();
+        }
+
+        function subscribePlan(planName, price) {
+            state.cart = [{ id: 'plan-' + Date.now(), title: `Subscription: ${planName}`, price: price, grade: 'All', image: 'https://placehold.co/600x400/4f46e5/ffffff?text=Subscription' }];
+            localStorage.setItem('onlinetuition_cart', JSON.stringify(state.cart));
+            updateCartUI();
+            openJuiceModal();
+        }
+
+        function toggleBillingPeriod() {
+            const dot = document.getElementById('billing-toggle-dot');
+            if (state.billingPeriod === 'monthly') {
+                state.billingPeriod = 'annual';
+                dot.classList.add('translate-x-6');
+                document.getElementById('plan-monthly-price').textContent = "Rs 1,125";
+                document.getElementById('plan-term-price').textContent = "Rs 3,000";
+                document.getElementById('plan-annual-price').textContent = "Rs 9,000";
+            } else {
+                state.billingPeriod = 'monthly';
+                dot.classList.remove('translate-x-6');
+                document.getElementById('plan-monthly-price').textContent = "Rs 1,500";
+                document.getElementById('plan-term-price').textContent = "Rs 4,000";
+                document.getElementById('plan-annual-price').textContent = "Rs 12,000";
+            }
+        }
+
+        // --- COURSE MODAL & VIDEO PLAYER INTERACTION ---
+        function openCourseModal(courseId) {
+            const course = coursesData.find(c => c.id === courseId);
+            if (!course) return;
+            state.activeCourseId = courseId;
+
+            document.getElementById('modal-course-title').textContent = course.title;
+            document.getElementById('modal-grade-badge').textContent = course.grade;
+            document.getElementById('modal-completion-status').textContent = course.completed ? "Status: Completed" : "Status: In Progress";
+
+            renderSyllabusAccordion();
+            document.getElementById('course-modal').classList.remove('hidden');
+        }
+
+        function closeCourseModal() {
+            document.getElementById('course-modal').classList.add('hidden');
+            state.isPlaying = false;
+        }
+
+        function renderSyllabusAccordion() {
+            const container = document.getElementById('modal-syllabus-accordion');
+            container.innerHTML = '';
+            coursesData.forEach((c, idx) => {
+                const item = document.createElement('div');
+                item.className = `p-3 rounded-2xl border transition cursor-pointer ${c.id === state.activeCourseId ? 'bg-brand-500/10 border-brand-500/40 text-white' : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'}`;
+                item.onclick = () => openCourseModal(c.id);
+                item.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-xs font-bold">${idx + 1}</div>
+                        <div class="flex-grow min-w-0">
+                            <h5 class="font-bold text-xs truncate">${c.title}</h5>
+                            <span class="text-[10px] text-slate-500">${c.grade}</span>
+                        </div>
+                        ${c.completed ? '<i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>' : ''}
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function togglePlaySimulation() {
+            state.isPlaying = !state.isPlaying;
+            const playIconMain = document.getElementById('play-icon-symbol');
+            const playIconSub = document.getElementById('play-icon-sub');
+            if (state.isPlaying) {
+                playIconMain.className = "fa-solid fa-pause ml-0";
+                playIconSub.className = "fa-solid fa-pause";
+                showToast("Video session playing...", "info");
+            } else {
+                playIconMain.className = "fa-solid fa-play ml-1";
+                playIconSub.className = "fa-solid fa-play";
+            }
+        }
+
+        function seekVideo(e) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            state.videoProgress = pos * 100;
+            document.getElementById('video-progress-fill').style.width = `${state.videoProgress}%`;
+            showToast(`Seeked to ${Math.floor(pos * 24)}m ${Math.floor((pos * 24 % 1) * 60)}s`, "info");
+        }
+
+        function changePlaybackSpeed(spd) {
+            showToast(`Playback speed changed to ${spd}x`, "info");
+        }
+
+        function switchModalTab(tab) {
+            ['notes', 'worksheet', 'qa', 'bookmarks'].forEach(t => {
+                document.getElementById(`tab-content-${t}`).classList.add('hidden');
+                document.getElementById(`tab-btn-${t}`).className = "px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition flex-shrink-0";
+            });
+            document.getElementById(`tab-content-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-btn-${tab}`).className = "px-4 py-2 rounded-xl text-xs font-bold bg-brand-500/10 text-brand-400 border border-brand-500/30 transition flex-shrink-0";
+        }
+
+        function toggleTheaterMode() {
+            const box = document.getElementById('modal-container-box');
+            box.classList.toggle('max-w-6xl');
+            box.classList.toggle('max-w-none');
+            box.classList.toggle('w-full');
+            box.classList.toggle('h-full');
+        }
+
+        function addBookmarkNote() {
+            state.bookmarks.push(`Timestamp Note at 12:40 - Formula derivation`);
+            document.getElementById('user-bookmarks-count').textContent = `${state.bookmarks.length} Saved`;
+            const container = document.getElementById('bookmarks-list');
+            container.innerHTML = state.bookmarks.map(b => `<div class="p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-amber-300"><i class="fa-solid fa-bookmark mr-2"></i> ${b}</div>`).join('');
+            showToast("Timestamp bookmark added!", "success");
+        }
+
+        function triggerPDFDownload() {
+            showToast("Downloading Completing_The_Square_Worksheet.pdf...", "success");
+        }
+
+        function toggleCourseCompleted() {
+            const course = coursesData.find(c => c.id === state.activeCourseId);
+            if(course) {
+                course.completed = true;
+                course.progress = 100;
+                document.getElementById('modal-completion-status').textContent = "Status: Completed";
+                renderCourses();
+                renderSyllabusAccordion();
+                showToast("Module marked as completed!", "success");
+            }
+        }
+
+        function postQAComment() {
+            const val = document.getElementById('qa-input-field').value.trim();
+            if(!val) return;
+            const container = document.getElementById('qa-comments-container');
+            const div = document.createElement('div');
+            div.className = "bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs";
+            div.innerHTML = `<span class="font-bold text-white block mb-1">You</span><p class="text-slate-400">${val}</p>`;
+            container.appendChild(div);
+            document.getElementById('qa-input-field').value = '';
+            showToast("Question posted to tutor forum!", "success");
+        }
+
+        // --- DIAGNOSTIC QUIZ LOGIC & CONFETTI ---
+        function openQuizModal() {
+            state.quizStep = 0;
+            state.quizScore = 0;
+            renderQuizStep();
+            document.getElementById('quiz-modal').classList.remove('hidden');
+        }
+
+        function closeQuizModal() {
+            document.getElementById('quiz-modal').classList.add('hidden');
+        }
+
+        function renderQuizStep() {
+            const body = document.getElementById('quiz-body');
+            if (state.quizStep >= quizQuestions.length) {
+                // Quiz Finished
+                body.innerHTML = `
+                    <div class="text-center py-6 space-y-4">
+                        <div class="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center text-3xl mx-auto border border-emerald-500/30">
+                            <i class="fa-solid fa-trophy"></i>
+                        </div>
+                        <h4 class="text-2xl font-black text-white">Quiz Completed!</h4>
+                        <p class="text-xs text-slate-400">You scored <strong class="text-emerald-400 font-bold">${state.quizScore} out of ${quizQuestions.length}</strong> correct!</p>
+                        <button onclick="closeQuizModal()" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3.5 rounded-xl shadow-lg transition">
+                            Back to Learning
+                        </button>
+                    </div>
+                `;
+                // Trigger Confetti Celebration Effect
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+                return;
+            }
+
+            const q = quizQuestions[state.quizStep];
+            body.innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex justify-between text-xs text-slate-500 font-bold">
+                        <span>Question ${state.quizStep + 1} of ${quizQuestions.length}</span>
+                        <span>Topic: Cambridge O-Level</span>
+                    </div>
+                    <h4 class="text-sm font-bold text-white leading-snug">${q.q}</h4>
+                    <div class="space-y-2">
+                        ${q.options.map((opt, idx) => `
+                            <button onclick="answerQuizQuestion(${idx})" class="w-full text-left p-3.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-brand-500/50 hover:bg-slate-800/50 text-xs font-semibold text-slate-200 transition flex items-center">
+                                <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 flex items-center justify-center text-[10px] mr-3 font-bold">${String.fromCharCode(65 + idx)}</span>
+                                ${opt}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function answerQuizQuestion(selectedIdx) {
+            const q = quizQuestions[state.quizStep];
+            if (selectedIdx === q.answer) {
+                state.quizScore++;
+                showToast("Correct Answer!", "success");
+            } else {
+                showToast(`Incorrect. ${q.explanation}`, "error");
+            }
+            state.quizStep++;
+            renderQuizStep();
+        }
+
+        // --- PAYMENT MODALS & VERIFICATION ---
+        function openJuiceModal() {
+            document.getElementById('juice-modal').classList.remove('hidden');
+        }
+        function closeJuiceModal() {
+            document.getElementById('juice-modal').classList.add('hidden');
+        }
+        function openPayPalModal() {
+            document.getElementById('paypal-modal').classList.remove('hidden');
+        }
+        function closePayPalModal() {
+            document.getElementById('paypal-modal').classList.add('hidden');
+        }
+
+        function verifyJuicePayment() {
+            const ref = document.getElementById('juice-ref-code').value.trim();
+            if(!ref) {
+                showToast("Please enter your MCB Juice reference code.", "error");
+                return;
+            }
+            showToast("MCB Juice Payment Approved! Access unlocked.", "success");
+            closeJuiceModal();
+            state.cart = [];
+            localStorage.setItem('onlinetuition_cart', JSON.stringify(state.cart));
+            updateCartUI();
+            switchView('dashboard');
+        }
+
+        function verifyPayPalPayment() {
+            showToast("Redirecting to PayPal Sandbox... Payment approved!", "success");
+            closePayPalModal();
+            state.cart = [];
+            localStorage.setItem('onlinetuition_cart', JSON.stringify(state.cart));
+            updateCartUI();
+            switchView('dashboard');
+        }
+
+        function handleContactSubmit(e) {
+            e.preventDefault();
+            showToast("Inquiry sent to Mr. Ravi Choolun! We will reply via email.", "success");
+            e.target.reset();
+        }
+
+        // --- TOAST NOTIFICATIONS ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const icon = type === 'success' ? 'fa-circle-check text-emerald-400' : (type === 'error' ? 'fa-circle-xmark text-red-400' : 'fa-circle-info text-brand-400');
+            toast.className = `glass-panel text-white px-4 py-3 rounded-2xl shadow-2xl text-xs font-bold flex items-center space-x-3 transform translate-y-2 opacity-0 transition-all duration-300 pointer-events-auto border border-slate-700/80`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icon} text-base"></i>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
