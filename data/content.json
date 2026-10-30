@@ -1,0 +1,131 @@
+{
+  "meta": { "schema": 1, "updatedAt": "2026-10-30T00:00:00.000Z", "sample": true },
+  "site": {
+    "name": "Kavish Tuitions",
+    "wordmark": "Kavish",
+    "tagline": "Cambridge SC & HSC tuition — live online and in Quatre Bornes",
+    "description": "Small-group tuition for Grade 7 to 13 in Mauritius: Mathematics, sciences, commerce and languages for NCE, SC and HSC.",
+    "phone": "+230 5000 0000",
+    "whatsapp": "23050000000",
+    "email": "hello@example.com",
+    "address": "Avenue des Palmiers, Quatre Bornes, Mauritius",
+    "hours": "Mon–Fri 15:30–20:30 · Sat 08:00–16:00",
+    "mapUrl": "",
+    "formEndpoint": "",
+    "social": { "facebook": "", "instagram": "", "youtube": "", "tiktok": "" },
+    "announcement": { "enabled": true, "text": "2027 enrolment is open. HSC groups are capped at 12.", "linkLabel": "Reserve a place", "href": "#/enrol" },
+    "payment": { "juice": "+230 5000 0000", "bank": "MCB · 000 000 000 00 · Kavish Tuitions", "note": "Use the student's full name as the payment reference." }
+  },
+  "hero": {
+    "eyebrow": "Grade 7 – 13 · NCE · SC · HSC",
+    "title": "Understand it properly.\nThe marks follow.",
+    "highlight": "properly",
+    "subtitle": "Small groups, live lessons and marked past papers every week.",
+    "primaryCta": { "label": "See the courses", "href": "#/courses" },
+    "secondaryCta": { "label": "Take the 3-minute check", "href": "#/quiz" }
+  },
+  "stats": [
+    { "value": 12, "prefix": "", "suffix": "", "label": "students per group, at most" }
+  ],
+  "levels": [
+    { "id": "lower", "name": "Grade 7–9", "exam": "NCE", "summary": "Foundations." },
+    { "id": "sc", "name": "Grade 10–11", "exam": "SC · Cambridge O Level", "summary": "Exam years." },
+    { "id": "hsc", "name": "Grade 12–13", "exam": "HSC · Cambridge A Level", "summary": "Depth and speed." }
+  ],
+  "categories": [
+    { "id": "maths", "name": "Mathematics" },
+    { "id": "sciences", "name": "Sciences" },
+    { "id": "commerce", "name": "Commerce" },
+    { "id": "computing", "name": "Computing" },
+    { "id": "languages", "name": "Languages" }
+  ],
+  "method": [
+    { "title": "Teach", "text": "One idea at a time." }
+  ],
+  "courses": [
+    {
+      "id": "sc-mathematics",
+      "title": "Mathematics",
+      "code": "4024",
+      "level": "sc",
+      "category": "maths",
+      "summary": "One line.",
+      "description": "A paragraph.",
+      "topics": ["Number", "Algebra"],
+      "mode": "hybrid",
+      "fee": 1800,
+      "seats": 12,
+      "seatsLeft": 4,
+      "tutorId": "kavish",
+      "featured": true,
+      "visible": true
+    }
+  ],
+  "tutors": [
+    {
+      "id": "kavish",
+      "name": "Kavish",
+      "role": "Founder · Mathematics & Physics",
+      "bio": "A paragraph.",
+      "subjects": ["Mathematics", "Physics"],
+      "credentials": ["BSc (Hons) Mathematics"],
+      "years": 12,
+      "photo": "",
+      "visible": true
+    }
+  ],
+  "testimonials": [
+    { "id": "t-1", "quote": "Quote.", "name": "Student", "detail": "HSC 2025", "visible": true }
+  ],
+  "plans": [
+    {
+      "id": "single",
+      "name": "One subject",
+      "monthly": 1800,
+      "termly": 5100,
+      "description": "One line.",
+      "features": ["Feature"],
+      "highlighted": false,
+      "ctaLabel": "Enrol",
+      "visible": true
+    }
+  ],
+  "timetable": [
+    { "id": "s-1", "day": "tue", "start": "17:30", "end": "19:00", "courseId": "sc-mathematics", "room": "Room 1 + Zoom" }
+  ],
+  "resources": [
+    {
+      "id": "r-1",
+      "title": "Paper 2 worked solutions",
+      "type": "past-paper",
+      "level": "sc",
+      "category": "maths",
+      "year": 2024,
+      "description": "One line.",
+      "url": "",
+      "visible": true
+    }
+  ],
+  "quiz": {
+    "title": "Where should you start?",
+    "intro": "One line.",
+    "questions": [
+      {
+        "id": "q-1",
+        "category": "maths",
+        "level": "sc",
+        "prompt": "Solve 3x − 7 = 11.",
+        "options": ["x = 4", "x = 6", "x = 18", "x = 3"],
+        "answer": 1,
+        "explain": "Add 7 to both sides, then divide by 3."
+      }
+    ],
+    "results": [
+      { "min": 0, "max": 100, "title": "Result", "text": "One line.", "recommend": "sc" }
+    ]
+  },
+  "faqs": [
+    { "id": "f-1", "q": "Question?", "a": "Answer." }
+  ],
+  "admin": { "passwordHash": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9" }
+}
