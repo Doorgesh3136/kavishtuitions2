@@ -30,6 +30,8 @@ export const DAYS = [
 
 export const ENQUIRY_STATUSES = ["new", "contacted", "enrolled", "archived"];
 
+export const MODE_LABELS = { online: "Online", "in-person": "In person", hybrid: "Hybrid (room + Zoom)" };
+
 /* ------------------------------------------------------------------ storage */
 
 function read(storage, key, fallback = null) {
@@ -140,8 +142,21 @@ export function validateContent(content) {
   const problems = [];
   if (!isObj(content)) return ["The file is not a JSON object."];
   if (!isObj(content.site)) problems.push("Missing \"site\" section.");
-  for (const k of ["courses", "tutors", "plans", "levels"]) {
-    if (content[k] !== undefined && !Array.isArray(content[k])) problems.push(`"${k}" should be a list.`);
+  const lists = ["stats", "levels", "categories", "method", "courses", "tutors", "testimonials", "plans", "timetable", "resources", "faqs"];
+  const check = (name, value) => {
+    if (value === undefined) return;
+    if (!Array.isArray(value)) return problems.push(`"${name}" should be a list.`);
+    value.forEach((item, i) => {
+      if (!isObj(item)) problems.push(`"${name}" item ${i + 1} isn't an entry (found ${JSON.stringify(item)}).`);
+    });
+  };
+  for (const k of lists) check(k, content[k]);
+  if (content.quiz !== undefined) {
+    if (!isObj(content.quiz)) problems.push("\"quiz\" should be an object.");
+    else {
+      check("quiz.questions", content.quiz.questions);
+      check("quiz.results", content.quiz.results);
+    }
   }
   return problems;
 }
@@ -272,7 +287,7 @@ export function enquiryMessage(content, e) {
     e.email ? `Email: ${e.email}` : null,
     e.level ? `Level: ${levelName(content, e.level)}` : null,
     courses.length ? `Courses: ${courses.join("; ")}` : null,
-    e.mode ? `Preferred format: ${e.mode}` : null,
+    e.mode ? `Preferred format: ${MODE_LABELS[e.mode] || e.mode}` : null,
     e.message ? `\n${e.message}` : null,
   ];
   return lines.filter((l) => l !== null).join("\n");
@@ -507,7 +522,9 @@ export function escapeHTML(value) {
 
 /** Only allow http(s), mailto, tel, hash and relative links in user-editable URLs. */
 export function safeUrl(url) {
-  const u = String(url || "").trim();
+  // Browsers drop ASCII tab/newline anywhere and C0 controls at the ends before parsing a URL,
+  // so "java\tscript:" would otherwise slip past the scheme check.
+  const u = String(url || "").replace(/[\u0000-\u001F\u007F]/g, "").trim();
   if (!u) return "";
   if (/^(https?:|mailto:|tel:|#|\/|\.\/|\.\.\/)/i.test(u)) return u;
   if (/^[a-z][a-z0-9+.-]*:/i.test(u)) return "";

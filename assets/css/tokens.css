@@ -11,7 +11,7 @@
   /* Ink */
   --ink: #161513;
   --ink-2: #3b3934;
-  --ink-3: #6b675e;
+  --ink-3: #5e5a52;       /* AA for small text on paper, paper-2 and paper-3 */
   --ink-4: #9a958a;
   --on-ink: #efebe3;
   --on-ink-2: rgba(239, 235, 227, 0.68);
