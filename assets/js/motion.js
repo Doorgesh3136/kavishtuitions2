@@ -252,6 +252,33 @@ function bind(root, { intro = false } = {}) {
     waiting.splice(0).forEach((fn, i) => guard("gated", () => fn(0.35 + i * 0.06)));
   };
 
+  // Content waiting for its scroll reveal is only faded/moved (opacity + transform, never
+  // visibility), so it stays in the tab order and the accessibility tree. If keyboard focus
+  // lands inside it before its ScrollTrigger fires (focus may scroll it only to the bottom
+  // edge, below the start line), it is revealed at once so the focused control is visible.
+  const pending = new Map(); // element -> reveal it now
+  const revealOnce = (el, run) => {
+    let fired = false;
+    const fire = (delay = 0) => {
+      if (fired) return;
+      fired = true;
+      pending.delete(el);
+      run(delay);
+    };
+    pending.set(el, () => fire(0));
+    return fire;
+  };
+  const onFocusIn = (e) => {
+    if (!pending.size) return;
+    for (let n = e.target; n && n !== root.parentNode; n = n.parentNode) {
+      const reveal = pending.get(n);
+      if (reveal) guard("focus reveal", reveal);
+    }
+  };
+  root.addEventListener("focusin", onFocusIn);
+  cleanups.push(() => root.removeEventListener("focusin", onFocusIn));
+  const later = (delay, fn) => (delay > 0 ? gsap.delayedCall(delay, fn) : fn());
+
   const items = [];
   let ctx = null;
   const inCtx = (fn) => (ctx ? ctx.add(fn) : fn());
@@ -310,15 +337,15 @@ function bind(root, { intro = false } = {}) {
               },
             });
           } else if (ST) {
+            const reveal = revealOnce(el, (delay) => {
+              state.played = true;
+              if (state.tl) later(delay, () => state.tl.play(0));
+            });
             ST.create({
               trigger: el,
               start: START,
               once: true,
-              onEnter: () =>
-                gated((delay) => {
-                  state.played = true;
-                  if (state.tl) gsap.delayedCall(delay, () => state.tl.play(0));
-                }),
+              onEnter: () => gated(reveal),
             });
           }
         })
@@ -338,10 +365,10 @@ function bind(root, { intro = false } = {}) {
             counts.forEach(mark);
             const from =
               kind === "fade"
-                ? { autoAlpha: 0 }
+                ? { opacity: 0 }
                 : kind === "clip"
                 ? { clipPath: "inset(100% 0% 0% 0%)" }
-                : { autoAlpha: 0, y: 28 };
+                : { opacity: 0, y: 28 };
             gsap.set(el, from);
             if (paths.length) prepDraw(paths);
             counts.forEach((c) => {
@@ -356,14 +383,14 @@ function bind(root, { intro = false } = {}) {
                 const to =
                   kind === "clip"
                     ? { clipPath: "inset(0% 0% 0% 0%)", duration: 1.1, ease: EASE.inOut }
-                    : { autoAlpha: 1, y: 0, duration: 1, ease: EASE.out };
+                    : { opacity: 1, y: 0, duration: 1, ease: EASE.out };
                 tl.to(el, { ...to, clearProps: kind === "clip" ? "clipPath" : "transform" });
                 if (paths.length) tl.add(drawTween(paths), 0.45);
                 counts.forEach((c) => tl.add(countTween(c, num(c.dataset.count, 0)), 0.15));
                 return tl;
               },
               finish() {
-                gsap.set(el, { autoAlpha: 1, clearProps: "transform,clipPath" });
+                gsap.set(el, { opacity: 1, clearProps: "transform,clipPath" });
                 clearDraw(paths);
                 counts.forEach((c) => {
                   c.textContent = countFormat(c)(num(c.dataset.count, 0));
@@ -388,15 +415,16 @@ function bind(root, { intro = false } = {}) {
           const each = num(parent.getAttribute("data-stagger"), 0.08);
           const tween = gsap.fromTo(
             kids,
-            { autoAlpha: 0, y: 24 },
-            { autoAlpha: 1, y: 0, duration: 0.95, ease: EASE.out, stagger: each, paused: true, clearProps: "transform" }
+            { opacity: 0, y: 24 },
+            { opacity: 1, y: 0, duration: 0.95, ease: EASE.out, stagger: each, paused: true, clearProps: "transform" }
           );
           if (!ST) return tween.progress(1);
+          const reveal = revealOnce(parent, (delay) => later(delay, () => tween.play()));
           ST.create({
             trigger: parent,
             start: START,
             once: true,
-            onEnter: () => gated((delay) => gsap.delayedCall(delay, () => tween.play())),
+            onEnter: () => gated(reveal),
           });
         })
       );
@@ -416,20 +444,21 @@ function bind(root, { intro = false } = {}) {
               { clipPath: "inset(0% 0% 0% 0%)", duration: 1.2, ease: EASE.inOut, paused: true, clearProps: "clipPath" }
             );
           } else if (kind === "fade") {
-            tween = gsap.fromTo(el, { autoAlpha: 0 }, { autoAlpha: 1, duration: 1, ease: "power2.out", paused: true });
+            tween = gsap.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 1, ease: "power2.out", paused: true });
           } else {
             tween = gsap.fromTo(
               el,
-              { autoAlpha: 0, y: 24 },
-              { autoAlpha: 1, y: 0, duration: 1, ease: EASE.out, paused: true, clearProps: "transform" }
+              { opacity: 0, y: 24 },
+              { opacity: 1, y: 0, duration: 1, ease: EASE.out, paused: true, clearProps: "transform" }
             );
           }
           if (!ST) return tween.progress(1);
+          const reveal = revealOnce(el, (delay) => later(delay, () => tween.play()));
           ST.create({
             trigger: el,
             start: START,
             once: true,
-            onEnter: () => gated((delay) => gsap.delayedCall(delay, () => tween.play())),
+            onEnter: () => gated(reveal),
           });
         })
       );
@@ -689,7 +718,11 @@ function magnetic(el, mark) {
     el.removeEventListener("pointerenter", enter);
     el.removeEventListener("pointermove", move);
     el.removeEventListener("pointerleave", leave);
-    gsap.killTweensOf(inner ? [el, inner] : el);
+    // Kill the quickTo tweens themselves: gsap.killTweensOf([el, inner]) skips ones that never
+    // started, and those would keep the detached button (and its whole old view) in memory.
+    [xTo, yTo, ixTo, iyTo].forEach((to) => to && to.tween && to.tween.kill());
+    gsap.killTweensOf(el);
+    if (inner) gsap.killTweensOf(inner);
     gsap.set(inner ? [el, inner] : el, { clearProps: "transform" });
   };
 }
@@ -725,6 +758,7 @@ function tilt(el, mark) {
     el.removeEventListener("pointerenter", enter);
     el.removeEventListener("pointermove", move);
     el.removeEventListener("pointerleave", leave);
+    [rxTo, ryTo].forEach((to) => to && to.tween && to.tween.kill());
     gsap.killTweensOf(el);
     gsap.set(el, { clearProps: "transform" });
   };

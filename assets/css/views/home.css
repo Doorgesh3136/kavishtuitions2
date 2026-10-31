@@ -240,6 +240,28 @@
   .view--home .home-hero__margin {
     display: none;
   }
+  /* Tablet landscape and small laptops: the scene's lower models sit close to the copy column,
+     so the calls to action tighten and the note's arrow lands on the quiz button, not on a model. */
+  .view--home .home-hero .btn--lg {
+    --btn-h: 58px;
+    --btn-icon: 42px;
+    font-size: 1rem;
+    padding-left: 26px;
+  }
+  .view--home .home-hero__actions {
+    gap: 10px;
+  }
+  .view--home .home-hero__note {
+    left: calc(100% + 4px);
+    bottom: 58%;
+    width: 11.75rem;
+  }
+  .view--home .home-hero__note-text {
+    padding-left: 2.6rem;
+  }
+  .view--home .home-hero__arrow {
+    width: 3.5rem;
+  }
 }
 @media (min-width: 1440px) {
   .view--home .home-hero__title {
@@ -728,6 +750,20 @@
   text-align: right;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* Phones: "Room B · Quatre Bornes" would be cut to "Room B · Quat…"; the place takes its own line. */
+@media (max-width: 479px) {
+  .view--home .home-course__room {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .view--home .home-course__place {
+    display: block;
+    margin-top: 2px;
+  }
+  .view--home .home-course__sep {
+    display: none;
+  }
 }
 .view--home .home-course__foot {
   display: flex;
@@ -1323,6 +1359,7 @@
   min-width: 0;
   padding: 16px 16px 20px;
   border-top: 1px solid var(--hair);
+  container-type: inline-size;
 }
 .view--home .home-stat:nth-child(-n + 2) {
   border-top: 0;
@@ -1339,9 +1376,11 @@
 .view--home .home-stat__val {
   margin-top: 18px;
   font-family: var(--font-display);
-  font-size: clamp(3.5rem, 15vw, 6.25rem);
+  /* --len (characters in the figure) caps the size so long figures stay inside their cell */
+  font-size: min(clamp(3.5rem, 15vw, 6.25rem), 210cqi / var(--len, 3));
   line-height: 0.86;
   letter-spacing: -0.03em;
+  white-space: nowrap;
 }
 .view--home .home-stat__label {
   max-width: 22ch;
@@ -1371,7 +1410,7 @@
   }
   .view--home .home-stat__val {
     margin-top: 40px;
-    font-size: clamp(4.5rem, 7vw, 7rem);
+    font-size: min(clamp(4.5rem, 7vw, 7rem), 210cqi / var(--len, 3));
   }
 }
 

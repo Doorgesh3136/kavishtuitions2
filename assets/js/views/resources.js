@@ -360,7 +360,8 @@ function accessSection(content, m) {
 let active = null; // mounted instance, for onQuery
 
 function setupLibrary(root, ctx) {
-  const lib = root.querySelector(".rs-lib");
+  // The empty register reuses the .rs-lib section class but has no controls to wire up.
+  const lib = root.querySelector(".rs-lib:not(.rs-lib--empty)");
   if (!lib) return null;
   const { content, motion } = ctx;
   const gsap = window.gsap;
@@ -379,6 +380,7 @@ function setupLibrary(root, ctx) {
   const empty = lib.querySelector(".rs-empty");
   const countEl = lib.querySelector(".rs-status__n");
   const resetBtn = lib.querySelector(".rs-status__reset");
+  if (![form, input, clearBtn, levelSel, subjectSel, groupsEl, empty, countEl, resetBtn].every(Boolean)) return null;
   const rowsByKey = () => new Map([...groupsEl.querySelectorAll(".rs-row")].map((el) => [el.dataset.key, el]));
 
   let flip = null;

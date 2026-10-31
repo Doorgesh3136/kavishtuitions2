@@ -3,8 +3,8 @@
 
 import { html, raw, icon, render } from "../../assets/js/ui.js";
 import * as store from "../../assets/js/store.js";
-import { state, commit, subscribe, flush } from "./state.js";
-import { $, $$, toast, confirmDialog, openDrawer, flash, gsap, reduced, two, debounce } from "./dom.js";
+import { state, commit, subscribe, flush, readExternal, adoptExternal } from "./state.js";
+import { $, $$, toast, confirmDialog, openDrawer, flash, gsap, reduced, two, debounce, relocator, focusBack } from "./dom.js";
 import { renderGroups, renderFields, bindForm, focusFirstError, getPath } from "./fields.js";
 
 /* ------------------------------------------------------------------ helpers */
@@ -16,6 +16,13 @@ export const keyOf = (item) => {
   if (!keys.has(item)) keys.set(item, `k${++keySeq}`);
   return keys.get(item);
 };
+/** A saved copy takes over its original's row key, so focus, flash and Flip follow it. */
+const inheritKey = (next, prev) => {
+  if (next && prev && typeof next === "object" && typeof prev === "object") keys.set(next, keyOf(prev));
+};
+
+/** A real list entry (hand-edited JSON can leave numbers, strings or null in a list). */
+export const isEntry = (x) => !!x && typeof x === "object" && !Array.isArray(x);
 
 export function listOf(schema, content = state.working) {
   const v = getPath(content, schema.path);
@@ -46,21 +53,37 @@ const hasId = (schema) => schema.idField !== false && Object.prototype.hasOwnPro
  * Open the editor for one item (index) or a new one (index = null).
  * opts: { prefill, onSaved(item, index), onOpen(item), onClose(), afterRender(api, draft) }
  */
-export function openItemEditor(schema, { index = null, prefill = null, onSaved = null, onOpen = null, onClose = null } = {}) {
+export function openItemEditor(schema, opts = {}) {
+  const { index = null, prefill = null, onSaved = null, onOpen = null, onClose = null } = opts;
   const content = state.working;
   const list = listOf(schema);
-  const isNew = index == null || !list[index];
+  const isNew = index == null || !isEntry(list[index]);
   const original = isNew ? null : list[index];
+  const origSnap = isNew ? "" : store.stableStringify(original);
   const draft = isNew ? { ...schema.create(content), ...(prefill || {}) } : store.deepClone(original);
-  const start = store.stableStringify(draft);
+  // Re-taken once the form is bound: the baseline is what the untouched form reads back, so values the
+  // form can't hold as-is (null text, a string where a list belongs) don't count as edits.
+  let start = store.stableStringify(draft);
   const fields = allFields(schema);
   const name = () => (schema.titleOf ? schema.titleOf(draft, content) : draft.title || draft.name) || "";
   const label = schema.singular;
   const Label = label[0].toUpperCase() + label.slice(1);
   const siteHref = !isNew && schema.siteLink ? schema.siteLink(original) : null;
 
+  /** Where this item sits in a list now: same object, same id, same content, or (no id) the same place. */
+  const findIn = (l) => {
+    if (isNew) return -1;
+    const k = l.indexOf(original);
+    if (k >= 0) return k;
+    if (original.id) return l.findIndex((x) => isEntry(x) && x.id === original.id);
+    const same = l.findIndex((x) => isEntry(x) && store.stableStringify(x) === origSnap);
+    if (same >= 0) return same;
+    return isEntry(l[index]) ? index : -1;
+  };
+
   const body = html`
     ${schema.editorIntro ? html`<p class="drawer__intro">${schema.editorIntro}</p>` : ""}
+    <div class="drawer-sync" data-sync aria-live="polite"></div>
     <form class="drawer-form" novalidate data-form>
       ${schema.groups ? renderGroups(schema.groups, draft, content) : renderFields(fields, draft, content)}
       <div class="drawer-notes" data-notes aria-live="polite"></div>
@@ -102,6 +125,7 @@ export function openItemEditor(schema, { index = null, prefill = null, onSaved =
     },
     onClose: () => {
       window.removeEventListener("beforeunload", guard);
+      unsubSync();
       if (onClose) onClose();
     },
   });
@@ -125,6 +149,31 @@ export function openItemEditor(schema, { index = null, prefill = null, onSaved =
     render(notesEl, schema.notes(draft, state.working, isNew ? -1 : index) || "");
   };
 
+  // Another tab saved while this editor is open: say what that means for this item.
+  const syncEl = $("[data-sync]", drawer.dialog);
+  const theirState = () => {
+    if (isNew) return "other";
+    const theirs = readExternal();
+    if (!theirs) return "other";
+    const l = listOf(schema, theirs);
+    const k = findIn(l);
+    if (k < 0) return "gone";
+    return store.stableStringify(l[k]) !== origSnap ? "changed" : "other";
+  };
+  const showSync = () => {
+    if (!state.external) return render(syncEl, "");
+    const st = theirState();
+    render(
+      syncEl,
+      html`<p class="note note--warn"><span class="note__k">Other tab</span><span>${st === "changed"
+        ? `This ${label} was changed in another tab while you had it open. Load their version, or save to keep yours.`
+        : st === "gone"
+          ? `This ${label} was deleted in another tab. Saving adds it back with your changes.`
+          : `Changes were saved in another tab. They're kept when you save this ${label}.`}</span>${st === "changed" ? html`<button type="button" class="a-btn a-btn--ghost a-btn--xs" data-load-theirs>Load their version</button>` : ""}</p>`
+    );
+  };
+  let unsubSync = () => {};
+
   form = bindForm(drawer.body, fields, {
     item: draft,
     content,
@@ -139,10 +188,18 @@ export function openItemEditor(schema, { index = null, prefill = null, onSaved =
       if (schema.onDraftChange) schema.onDraftChange(draft, drawer, form);
     },
   });
+  form.collect(draft);
+  start = store.stableStringify(draft);
   renderNotes();
   if (schema.afterRender) schema.afterRender(drawer, draft, form);
+  unsubSync = subscribe((kind) => {
+    if (kind === "external") showSync();
+  });
+  showSync();
 
-  const save = () => {
+  let busy = false;
+  const save = async () => {
+    if (busy || saved) return;
     const errors = form.validateAll();
     if (errors.length) {
       setState(`${errors.length} ${errors.length === 1 ? "field needs" : "fields need"} attention`, "error");
@@ -150,9 +207,28 @@ export function openItemEditor(schema, { index = null, prefill = null, onSaved =
       return;
     }
     form.collect(draft);
+    if (!isNew && store.stableStringify(draft) === start) {
+      // Nothing edited: don't write the copy opened earlier over anything newer.
+      saved = true;
+      drawer.close();
+      return;
+    }
     if (schema.beforeSave) schema.beforeSave(draft, state.working);
+    if (state.external && theirState() === "changed") {
+      busy = true;
+      const ok = await confirmDialog({
+        eyebrow: "Changed in another tab",
+        title: `Replace the other tab's version of this ${label}?`,
+        body: html`<p>This ${label} was also edited in another tab. Saving keeps your version of it. Their changes to everything else are kept either way.</p>`,
+        confirmLabel: "Save my version",
+        cancelLabel: "Keep editing",
+      });
+      busy = false;
+      if (!ok) return;
+    }
     let target = original;
     let at = index;
+    // commit() first takes in anything another tab saved, so this applies to the latest copy.
     commit(
       (c) => {
         const l = listOf(schema, c);
@@ -161,9 +237,23 @@ export function openItemEditor(schema, { index = null, prefill = null, onSaved =
           at = schema.insertAt ? schema.insertAt(draft, l) : l.length;
           l.splice(at, 0, draft);
           target = draft;
-        } else {
-          for (const k of Object.keys(original)) delete original[k];
+          return;
+        }
+        const k = findIn(l);
+        if (k >= 0 && l[k] === original) {
+          for (const key of Object.keys(original)) delete original[key];
           Object.assign(original, draft);
+          at = k;
+          return;
+        }
+        inheritKey(draft, original);
+        target = draft;
+        if (k >= 0) {
+          l[k] = draft;
+          at = k;
+        } else {
+          at = Math.min(index, l.length);
+          l.splice(at, 0, draft);
         }
       },
       { path: schema.path }
@@ -177,7 +267,14 @@ export function openItemEditor(schema, { index = null, prefill = null, onSaved =
 
   drawer.dialog.addEventListener("click", async (e) => {
     if (e.target.closest("[data-save]")) save();
-    else if (e.target.closest("[data-cancel]")) drawer.requestClose();
+    else if (e.target.closest("[data-load-theirs]")) {
+      // Reopen this item from the other tab's copy (closing lets the admin take that copy in).
+      saved = true;
+      await drawer.close();
+      if (state.external) adoptExternal();
+      const k = findIn(listOf(schema));
+      if (k >= 0) openItemEditor(schema, { ...opts, index: k, prefill: null });
+    } else if (e.target.closest("[data-cancel]")) drawer.requestClose();
     else if (e.target.closest("[data-del]")) {
       const ok = await deleteItem(schema, index);
       if (ok) {
@@ -204,7 +301,8 @@ export function openItemEditor(schema, { index = null, prefill = null, onSaved =
 export async function deleteItem(schema, index) {
   const list = listOf(schema);
   const item = list[index];
-  if (!item) return false;
+  if (!isEntry(item)) return false;
+  const snap = store.stableStringify(item);
   const name = (schema.titleOf ? schema.titleOf(item, state.working) : item.title || item.name) || `this ${schema.singular}`;
   const note = schema.deleteNote ? schema.deleteNote(item, state.working) : "";
   const ok = await confirmDialog({
@@ -215,15 +313,24 @@ export async function deleteItem(schema, index) {
     danger: true,
   });
   if (!ok) return false;
+  const back = relocator(document.activeElement);
   const touched = [rootKey(schema), ...(schema.cascade || [])];
-  const snapshot = Object.fromEntries(touched.map((k) => [k, store.deepClone(state.working[k])]));
+  let snapshot = null;
   commit(
     (c) => {
-      listOf(schema, c).splice(index, 1);
+      // Snapshot here, inside commit, so Undo restores the copy the delete applied to.
+      snapshot = Object.fromEntries(touched.map((k) => [k, store.deepClone(c[k])]));
+      const l = listOf(schema, c);
+      let k = l.indexOf(item);
+      if (k < 0) k = item.id ? l.findIndex((x) => isEntry(x) && x.id === item.id) : l.findIndex((x) => isEntry(x) && store.stableStringify(x) === snap);
+      if (k < 0) return;
+      l.splice(k, 1);
       if (schema.onDelete) schema.onDelete(item, c);
     },
     { path: schema.path }
   );
+  // The row (and the button that was focused) is gone: move to the row now in its place.
+  focusBack(back);
   toast(`Deleted “${name}”`, {
     action: {
       label: "Undo",
@@ -303,6 +410,7 @@ export function mountCollection(host, schema, { openKey = null, onRoute = null, 
       .map((_, i) => i)
       .filter((i) => {
         const item = list[i];
+        if (!isEntry(item)) return false;
         for (const f of filters) {
           const want = ui.filters[f.key];
           if (want && String(f.get ? f.get(item) : item[f.key]) !== want) return false;
@@ -349,10 +457,12 @@ export function mountCollection(host, schema, { openKey = null, onRoute = null, 
     const list = listOf(schema);
     const idx = visibleIndexes(list);
     const filtered = isFiltered();
-    const shown = schema.hasVisible ? list.filter((x) => x.visible !== false).length : null;
+    const n = list.filter(isEntry).length;
+    const junk = list.length - n;
+    const shown = schema.hasVisible ? list.filter((x) => isEntry(x) && x.visible !== false).length : null;
     countEl.textContent = filtered
-      ? `${idx.length} of ${list.length}`
-      : `${list.length} ${list.length === 1 ? schema.singular : schema.plural}${shown != null && shown !== list.length ? ` · ${list.length - shown} hidden` : ""}`;
+      ? `${idx.length} of ${n}`
+      : `${n} ${n === 1 ? schema.singular : schema.plural}${shown != null && shown !== n ? ` · ${n - shown} hidden` : ""}`;
 
     // Keep focus on the same control across re-renders.
     const active = document.activeElement;
@@ -360,7 +470,7 @@ export function mountCollection(host, schema, { openKey = null, onRoute = null, 
     const focusKey = activeRow ? activeRow.dataset.key : null;
     const focusAct = active && active.dataset ? active.dataset.act : null;
 
-    if (!list.length) {
+    if (!n) {
       render(
         rowsEl,
         html`<div class="empty">
@@ -385,6 +495,7 @@ export function mountCollection(host, schema, { openKey = null, onRoute = null, 
     render(
       rowsEl,
       html`${filtered ? html`<p class="coll__hint">Showing a filtered list — clear the search to reorder.</p>` : ""}
+        ${junk ? html`<p class="coll__hint">${junk} ${junk === 1 ? "entry in this list isn't" : "entries in this list aren't"} readable (for example a bare number in <span class="mono-code">content.json</span>) and ${junk === 1 ? "is" : "are"} skipped here. Import a corrected file from <a class="link" href="#publish">Publish</a> to remove ${junk === 1 ? "it" : "them"}.</p>` : ""}
         <ol class="ledger" role="list">${idx.map((i) => rowTpl(list[i], i, list.length, filtered))}</ol>`
     );
     if (focusKey) {
@@ -547,7 +658,9 @@ export function mountCollection(host, schema, { openKey = null, onRoute = null, 
         commit((c) => {
           const l = listOf(schema, c);
           const copy = order.map((k) => l[k]);
-          l.splice(0, l.length, ...copy);
+          // Entries the list doesn't show (unreadable ones) keep their place at the end.
+          const rest = l.filter((_, k) => !order.includes(k));
+          l.splice(0, l.length, ...copy, ...rest);
         }, { path: schema.path });
         flash(rowsEl.querySelector(`[data-key="${li.dataset.key}"]`));
         announce("Order saved");
@@ -593,8 +706,9 @@ export function mountCollection(host, schema, { openKey = null, onRoute = null, 
 
   if (openKey != null) {
     const list = listOf(schema);
-    const i = list.findIndex((x) => x && x.id === openKey);
+    const i = list.findIndex((x) => isEntry(x) && x.id === openKey);
     if (i >= 0) setTimeout(() => openEditor(i), 60);
+    else if (onRoute) onRoute(null); // a link to an item that's gone: show the list's own address
   }
 
   return {
@@ -617,9 +731,9 @@ export function mountCollection(host, schema, { openKey = null, onRoute = null, 
 function resolveSource(src, content) {
   if (Array.isArray(src)) return src.map((x) => (typeof x === "string" ? { value: x, label: x } : x));
   const map = {
-    levels: (c) => c.levels.map((l) => ({ value: l.id, label: l.name })),
-    categories: (c) => c.categories.map((x) => ({ value: x.id, label: x.name })),
-    tutors: (c) => c.tutors.map((t) => ({ value: t.id, label: t.name })),
+    levels: (c) => c.levels.filter(isEntry).map((l) => ({ value: l.id, label: l.name })),
+    categories: (c) => c.categories.filter(isEntry).map((x) => ({ value: x.id, label: x.name })),
+    tutors: (c) => c.tutors.filter(isEntry).map((t) => ({ value: t.id, label: t.name })),
   };
   return map[src] ? map[src](content) : [];
 }

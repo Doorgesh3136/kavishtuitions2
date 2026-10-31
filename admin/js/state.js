@@ -32,8 +32,10 @@ export const state = {
   savedAt: null,
   saving: false,
   saveError: false,
-  publishedAt: null, // set when this browser committed recently and Pages may still be building
+  publishedAt: null, // set when this browser committed (or pulled) recently and Pages may still be building
   commitUrl: null,
+  pulled: false, // the recent baseline came from "Pull latest", not from a publish made here
+  external: false, // another tab saved the draft while an editor was open here; take it in before saving
 };
 
 const subs = new Set();
@@ -76,6 +78,8 @@ export function init({ content, published, source }) {
   state.savedAt = store.getDraftInfo()?.savedAt || null;
   state.publishedAt = null;
   state.commitUrl = null;
+  state.pulled = false;
+  state.external = false;
 
   // A publish from this browser may not have reached GitHub Pages yet: use the committed copy as the
   // baseline for a while so the status doesn't claim the just-published edits are "not live".
@@ -89,6 +93,7 @@ export function init({ content, published, source }) {
       state.published = committed;
       state.publishedAt = rec.at;
       state.commitUrl = rec.commitUrl || null;
+      state.pulled = !!rec.pulled;
     } else {
       writeLocal(PUBLISH_KEY, null);
     }
@@ -108,6 +113,8 @@ export const sectionLabel = (k) => SECTIONS[k]?.label || k;
 
 /** Apply a change to the working copy and autosave it (debounced). */
 export function commit(mutator, info = {}) {
+  // Never write a stale copy over what another tab saved meanwhile.
+  if (state.external) adoptExternal();
   mutator(state.working);
   saveSoon();
   notify("content", info);
@@ -116,6 +123,7 @@ export function commit(mutator, info = {}) {
 /** Replace the whole working copy (import, pull, discard). Saves immediately. */
 export function replaceWorking(content, info = {}) {
   state.working = store.normalizeContent(store.deepClone(content));
+  state.external = false; // a deliberate replace wins over anything another tab saved
   flush();
   notify("replace", info);
 }
@@ -129,9 +137,17 @@ export function saveSoon() {
 
 /** Write the draft now. A working copy identical to the live one clears the draft instead. */
 export function flush() {
+  const pending = timer !== null;
   clearTimeout(timer);
   timer = null;
   if (!state.working) return;
+  // Nothing new to save here, and another tab saved a newer draft this tab hasn't taken in yet (an
+  // editor is open). Writing now — on tab switch, reload or close — would put this tab's older copy
+  // over theirs, and the other tab would then adopt it: their edit would vanish from both.
+  if (state.external && !pending) {
+    state.saving = false;
+    return true;
+  }
   const changed = changedSections();
   let ok = true;
   if (changed && changed.length === 0 && !state.publishedAt) {
@@ -149,17 +165,80 @@ export function flush() {
 
 export const hasPendingSave = () => timer !== null;
 
+/* ------------------------------------------------------------------ other tabs */
+
+/** Another tab saved the draft while this one couldn't take it in yet (an editor is open). */
+export function markExternal() {
+  state.external = true;
+  notify("external");
+}
+
+/** What the other tab left: its draft, or the live copy when it cleared the draft. Normalised, or null. */
+export function readExternal() {
+  const d = store.getDraft();
+  if (d) return store.normalizeContent(store.deepClone(d));
+  return state.published ? store.deepClone(state.published) : null;
+}
+
+/**
+ * Take in what another tab saved. Doesn't write anything: the draft already holds it.
+ * Returns true when the working copy changed.
+ */
+export function adoptExternal(next = readExternal()) {
+  state.external = false;
+  if (!next) return false;
+  state.savedAt = store.getDraftInfo()?.savedAt || null;
+  if (store.sameContent(next, state.working)) return false;
+  state.working = next;
+  notify("replace", { source: "tab" });
+  return true;
+}
+
+/* ------------------------------------------------------------------ publish & pull */
+
 /** After a successful publish: the committed content becomes the baseline. */
 export function markPublished(content, commitUrl) {
   state.working = store.normalizeContent(store.deepClone(content));
   state.published = store.normalizeContent(store.deepClone(content));
   state.publishedAt = new Date().toISOString();
   state.commitUrl = commitUrl || null;
+  state.pulled = false;
   writeLocal(PUBLISH_KEY, { at: state.publishedAt, commitUrl, content });
   // publishContent already saved the committed copy as the draft (the public site previews it until Pages catches up).
   state.savedAt = store.getDraftInfo()?.savedAt || state.publishedAt;
   notify("published");
   notify("replace", { source: "publish" });
+}
+
+/**
+ * After "Pull latest": the repository copy becomes the working copy and the baseline.
+ * `live` = GitHub Pages already serves that same file. Otherwise Pages is still catching up, so the
+ * pulled copy is kept as the draft (this browser previews it, and a reload keeps it) and remembered
+ * like a publish from here until Pages serves it.
+ */
+export function markPulled(content, { live = false } = {}) {
+  state.working = store.normalizeContent(store.deepClone(content));
+  state.published = store.normalizeContent(store.deepClone(content));
+  state.external = false;
+  state.commitUrl = null;
+  if (live) {
+    state.publishedAt = null;
+    state.pulled = false;
+    writeLocal(PUBLISH_KEY, null);
+    flush(); // identical to the live file, so this clears the draft
+  } else {
+    state.publishedAt = new Date().toISOString();
+    state.pulled = true;
+    writeLocal(PUBLISH_KEY, { at: state.publishedAt, commitUrl: null, content, pulled: true });
+    clearTimeout(timer);
+    timer = null;
+    const ok = store.saveDraft(content);
+    state.savedAt = store.getDraftInfo()?.savedAt || state.publishedAt;
+    state.saving = false;
+    state.saveError = !ok;
+    notify("saved", { ok });
+  }
+  notify("replace", { source: "pull" });
 }
 
 /** Replace the baseline with a freshly fetched published copy (e.g. after "Discard local changes"). */
@@ -191,7 +270,11 @@ export function status() {
     return { tone: "warn", short: "Live copy unavailable", text: "Couldn't load the live content.json to compare — your edits are saved in this browser" };
   }
   if (changed.length === 0) {
-    if (pagesPending()) return { tone: "live", short: "Published", text: "Published — the live site updates in a minute or two" };
+    if (pagesPending()) {
+      return state.pulled
+        ? { tone: "live", short: "Pulled", text: "Matches GitHub — the live site updates in a minute or two" }
+        : { tone: "live", short: "Published", text: "Published — the live site updates in a minute or two" };
+    }
     return { tone: "live", short: "All live", text: "All changes are live" };
   }
   const n = changed.length;
@@ -205,8 +288,14 @@ export function status() {
 
 /* ------------------------------------------------------------------ diff for the Publish page */
 
-const titleOf = (item) =>
-  item?.title || item?.name || item?.q || item?.prompt || item?.label || item?.quote?.slice(0, 48) || item?.id || "item";
+const titleOf = (item, key) => {
+  // Sessions have no name of their own: "Wed 09:00 Mathematics" reads better than their id.
+  if (key === "timetable" && item && item.day) {
+    const course = store.byId(state.working?.courses, item.courseId) || store.byId(state.published?.courses, item.courseId);
+    return [store.dayShort(item.day), item.start, course?.title].filter(Boolean).join(" ");
+  }
+  return item?.title || item?.name || item?.q || item?.prompt || item?.label || item?.quote?.slice(0, 48) || item?.id || "item";
+};
 
 /**
  * Human summary of what changed in one section, e.g.
@@ -224,9 +313,10 @@ export function describeChange(key) {
       const added = b.filter((x) => !A.has(x.id));
       const removed = a.filter((x) => !B.has(x.id));
       const edited = b.filter((x) => A.has(x.id) && store.stableStringify(x) !== store.stableStringify(A.get(x.id)));
-      if (edited.length) out.push({ kind: "Edited", items: edited.map(titleOf) });
-      if (added.length) out.push({ kind: "Added", items: added.map(titleOf) });
-      if (removed.length) out.push({ kind: "Removed", items: removed.map(titleOf) });
+      const name = (x) => titleOf(x, key);
+      if (edited.length) out.push({ kind: "Edited", items: edited.map(name) });
+      if (added.length) out.push({ kind: "Added", items: added.map(name) });
+      if (removed.length) out.push({ kind: "Removed", items: removed.map(name) });
       const orderA = a.filter((x) => B.has(x.id)).map((x) => x.id).join("|");
       const orderB = b.filter((x) => A.has(x.id)).map((x) => x.id).join("|");
       if (orderA !== orderB) out.push({ kind: "Reordered", items: [] });

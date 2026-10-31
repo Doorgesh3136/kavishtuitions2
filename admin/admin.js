@@ -4,7 +4,7 @@
 import * as store from "../assets/js/store.js";
 import { html, raw, icon, render, el } from "../assets/js/ui.js";
 import * as S from "./js/state.js";
-import { $, $$, toast, confirmDialog, openDrawer, drawerOpen, topDrawer, gsap, reduced, tween, fmtAgo, two } from "./js/dom.js";
+import { $, $$, toast, confirmDialog, openDrawer, drawerOpen, topDrawer, onAllDrawersClosed, keepFocus, download, gsap, reduced, tween, fmtAgo, two } from "./js/dom.js";
 
 import overview from "./js/views/overview.js";
 import enquiries from "./js/views/enquiries.js";
@@ -56,7 +56,6 @@ const app = document.getElementById("app");
 let current = null; // { id, params, view, root, cleanup }
 let navBusy = false;
 let queued = null;
-let ignoreHash = false;
 
 /* ------------------------------------------------------------------ boot */
 
@@ -275,7 +274,7 @@ function shellTpl() {
     <div class="frame">
       <header class="topbar">
         <button type="button" class="icon-btn topbar__menu" data-menu aria-label="Open menu" aria-expanded="false">${icon("menu")}</button>
-        <a class="topbar__brand" href="#overview"><span class="brand__mark">${c.site.wordmark || "Admin"}</span><span class="brand__tag">Admin</span></a>
+        <a class="topbar__brand" href="#overview"><span class="brand__mark">${c.site.wordmark || c.site.name || "Admin"}</span><span class="brand__tag">Admin</span></a>
         <p class="crumb" data-crumb></p>
         <a class="pill" href="#publish" data-pill aria-live="polite"></a>
         <a class="a-btn a-btn--primary a-btn--xs topbar__publish" href="#publish" data-top-publish>${icon("upload", { size: 16 })}<span>Publish</span></a>
@@ -298,7 +297,8 @@ function showApp({ fromGate }) {
   }
   wireShell();
   if (!location.hash || !ROUTES.has(parseHash().id)) history.replaceState(null, "", "#overview");
-  go(parseHash(), { first: true });
+  // After signing in, put focus on the page heading (as route changes do) so it's announced.
+  go(parseHash(), { first: true, focusTitle: fromGate });
 }
 
 function parseHash() {
@@ -328,6 +328,10 @@ function wireShell() {
     if (kind === "enquiries") updateCounts();
   });
   window.addEventListener("storage", onStorage);
+  // Edits another tab saved while an editor was open here are taken in once it closes.
+  onAllDrawersClosed(() => {
+    if (S.state.external && $("[data-shell]")) takeOtherTab();
+  });
   window.addEventListener("pagehide", () => S.flush());
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) S.flush();
@@ -348,10 +352,6 @@ function wireShell() {
 /* ------------------------------------------------------------------ routing + transitions */
 
 async function onHash() {
-  if (ignoreHash) {
-    ignoreHash = false;
-    return;
-  }
   if (!$("[data-shell]")) return;
   const next = parseHash();
   // A modal drawer is open (e.g. a link inside it, or the Back button): close it first.
@@ -359,7 +359,9 @@ async function onHash() {
     const prevHash = current ? `#${[current.id, ...current.params].join("/")}` : "#overview";
     const closed = await topDrawer().requestClose();
     if (!closed) {
-      history.replaceState(null, "", prevHash);
+      // Kept editing: put the editor's address back as a new entry. Replacing would overwrite the
+      // entry Back just moved to, and the next Back would then leave the admin altogether.
+      history.pushState(null, "", prevHash);
       return;
     }
     // Closing the drawer rewrote the URL to the list; put the requested address back.
@@ -373,30 +375,75 @@ async function onHash() {
 }
 
 function makeCtx(r, params) {
-  return {
+  const ctx = {
     id: r.id,
     num: r.num,
     group: r.group,
     params,
     navigate: (hash) => (location.hash = hash),
     replaceRoute: (route) => {
+      // Only the page on screen owns the address: a late callback from a page that has gone mustn't rewrite it.
+      if (!current || current.ctx !== ctx) return;
       const h = `#${route}`;
       if (location.hash !== h) history.replaceState(null, "", h);
-      if (current) current.params = route.split("/").slice(1);
+      current.params = route.split("/").slice(1);
     },
     toast,
     rerender: () => rerender(),
     signOut: () => signOut(),
   };
+  return ctx;
 }
 
-async function go(next, { first = false } = {}) {
+/* A view that failed to render: says so plainly and offers the ways out (Publish, a download, retry). */
+const ERROR_VIEW = { id: "error", render: () => "" };
+
+function errorTpl(r, err) {
+  const onPublish = r.id === "publish";
+  return html`<header class="vh" data-a-intro>
+      <p class="vh__index"><span class="vh__num">${r.num}</span><span class="vh__group">${r.group}</span></p>
+      <div class="vh__row">
+        <div class="vh__main">
+          <h1 class="vh__title" tabindex="-1" data-view-title><span class="vh__mask"><span class="vh__line">${r.label} <em>didn't open</em>.</span></span></h1>
+          <p class="vh__lead">Something in the content stopped this page from loading — usually an entry with the wrong shape, for example after <span class="mono-code">content.json</span> was edited by hand. Nothing has been changed or lost.</p>
+        </div>
+      </div>
+    </header>
+    <section class="block view-error" data-a-intro aria-labelledby="ve-k">
+      <p class="view-error__k" id="ve-k">What you can do</p>
+      <ol class="view-error__steps">
+        <li><span class="view-error__n">1</span><p>Download a copy of this browser's content, so nothing can be lost.</p></li>
+        <li><span class="view-error__n">2</span><p>${onPublish
+          ? "Reload the admin. If the page still won't open, import a good backup from another browser."
+          : html`Open <strong>Publish</strong> to import a good backup, pull the latest from GitHub, or discard local changes and go back to the live version.`}</p></li>
+      </ol>
+      <p class="view-error__acts">
+        <button type="button" class="a-btn a-btn--ghost a-btn--sm" data-err="download">${icon("download", { size: 16 })}<span>Download a copy</span></button>
+        ${onPublish
+          ? html`<button type="button" class="a-btn a-btn--primary a-btn--sm" data-err="reload">${icon("refresh", { size: 16 })}<span>Reload the admin</span></button>`
+          : html`<a class="a-btn a-btn--primary a-btn--sm" href="#publish">${icon("upload", { size: 16 })}<span>Open Publish</span></a>
+            <button type="button" class="a-link" data-err="retry">Try again</button>`}
+      </p>
+      <p class="view-error__detail"><span class="view-error__dk">Details</span><span class="mono-code">${String(err?.message || err || "Unknown error").slice(0, 240)}</span></p>
+    </section>`;
+}
+
+function showViewError(host, r, params, ctx, err) {
+  console.error(`[admin] ${r.id} view failed`, err);
+  const root = el(html`<div class="view view--error" data-view="error"></div>`);
+  render(root, errorTpl(r, err));
+  host.replaceChildren(root);
+  current = { id: r.id, params, view: ERROR_VIEW, root, ctx, cleanup: null, failed: true };
+  return root;
+}
+
+async function go(next, { first = false, focusTitle = false } = {}) {
   if (navBusy) {
     queued = next;
     return;
   }
   const r = ROUTES.get(next.id);
-  if (current && current.id === next.id) {
+  if (current && current.id === next.id && !current.failed) {
     current.params = next.params;
     if (current.view.onParams) current.view.onParams(next.params);
     return;
@@ -410,62 +457,88 @@ async function go(next, { first = false } = {}) {
       cancelLabel: "Stay and fix",
     });
     if (!ok) {
-      ignoreHash = true;
-      history.replaceState(null, "", `#${[current.id, ...current.params].join("/")}`);
-      ignoreHash = false;
+      // Stayed: restore this page's address as a new entry (see onHash) so Back still works.
+      history.pushState(null, "", `#${[current.id, ...current.params].join("/")}`);
       return;
     }
   }
   navBusy = true;
   const host = $("[data-view-host]");
-  const g = gsap();
-  const old = host.firstElementChild;
+  let root = null;
+  let ctx = null;
   routeBar(true);
-  if (old && !first && g) {
-    await tween(old, reduced() ? { autoAlpha: 0, duration: 0.12 } : { autoAlpha: 0, y: -10, duration: 0.2, ease: "power2.in" });
-  }
-  if (current && current.cleanup) {
-    try {
-      current.cleanup();
-    } catch (e) {
-      console.error(e);
+  // Whatever a view does, navigation must keep working: a view that throws shows the error page instead.
+  try {
+    const g = gsap();
+    const old = host.firstElementChild;
+    // The outgoing page is on its way out: a click on it now would open an editor for a page that's
+    // about to go, left over the new one with the old page's address.
+    if (old) old.inert = true;
+    if (old && !first && g) {
+      await tween(old, reduced() ? { autoAlpha: 0, duration: 0.12 } : { autoAlpha: 0, y: -10, duration: 0.2, ease: "power2.in" });
     }
+    if (current && current.cleanup) {
+      const fn = current.cleanup;
+      current.cleanup = null;
+      try {
+        fn();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    const view = r.view;
+    ctx = makeCtx(r, next.params);
+    root = el(html`<div class="view view--${r.id}" data-view="${r.id}"></div>`);
+    render(root, view.render(ctx));
+    host.replaceChildren(root);
+    current = { id: r.id, params: next.params, view, root, ctx, cleanup: null };
+    current.cleanup = view.mount ? view.mount(root, ctx) || null : null;
+  } catch (err) {
+    if (current && current.root === root && current.cleanup) {
+      try {
+        current.cleanup();
+      } catch {}
+    }
+    root = showViewError(host, r, next.params, ctx || makeCtx(r, next.params), err);
+  } finally {
+    navBusy = false;
+    routeBar(false);
   }
-  const view = r.view;
-  const ctx = makeCtx(r, next.params);
-  const root = el(html`<div class="view view--${r.id}" data-view="${r.id}"></div>`);
-  render(root, view.render(ctx));
-  host.replaceChildren(root);
   window.scrollTo(0, 0);
-  current = { id: r.id, params: next.params, view, root, ctx, cleanup: null };
   setActiveNav(r.id, !first);
   updateChrome();
   document.title = `${r.label} · Admin · ${S.state.working.site.name || "Tuition site"}`;
-  try {
-    current.cleanup = view.mount ? view.mount(root, ctx) || null : null;
-  } catch (e) {
-    console.error(e);
-  }
   intro(root);
-  routeBar(false);
-  if (!first) {
+  if (!first || focusTitle) {
     const title = root.querySelector("[data-view-title]");
     if (title) title.focus({ preventScroll: true });
   }
-  navBusy = false;
   if (queued) {
     const q = queued;
     queued = null;
-    if (q.id !== current.id) go(q);
+    if (q.id !== current.id || current.failed) go(q);
     else if (current.view.onParams) current.view.onParams(q.params);
   }
 }
 
 function rerender() {
-  if (!current) return;
-  if (current.cleanup) current.cleanup();
-  render(current.root, current.view.render(current.ctx));
-  current.cleanup = current.view.mount ? current.view.mount(current.root, current.ctx) || null : null;
+  if (!current || current.failed) return;
+  const restore = keepFocus();
+  try {
+    if (current.cleanup) {
+      const fn = current.cleanup;
+      current.cleanup = null;
+      fn();
+    }
+    render(current.root, current.view.render(current.ctx));
+    current.cleanup = current.view.mount ? current.view.mount(current.root, current.ctx) || null : null;
+  } catch (err) {
+    showViewError($("[data-view-host]"), ROUTES.get(current.id), current.params, current.ctx, err);
+    const title = current.root.querySelector("[data-view-title]");
+    if (title) title.focus({ preventScroll: true });
+    return;
+  }
+  restore();
 }
 
 function intro(root) {
@@ -543,6 +616,13 @@ function updateChrome() {
     const r = ROUTES.get(current.id);
     render(crumb, html`<span class="crumb__num">${r.num}</span><span class="crumb__group">${r.group}</span><span class="crumb__sep" aria-hidden="true">/</span><span class="crumb__here">${r.label}</span>`);
   }
+  // The name and wordmark are editable here (Site & homepage): keep the brand and tab title in step.
+  const site = S.state.working?.site || {};
+  const mark = site.wordmark || site.name || "Admin";
+  $$("[data-shell] .brand__mark").forEach((n) => {
+    if (n.textContent !== mark) n.textContent = mark;
+  });
+  if (current && $("[data-shell]")) document.title = `${ROUTES.get(current.id).label} · Admin · ${site.name || "Tuition site"}`;
   updateCounts();
 }
 
@@ -565,12 +645,28 @@ function updateCounts() {
 /* ------------------------------------------------------------------ global events */
 
 function onDocClick(e) {
+  if (e.target.closest("a.skip")) {
+    // The hash is the route here: following "#main" would open Overview. Move focus instead.
+    e.preventDefault();
+    $("#main")?.focus();
+    return;
+  }
   if (e.target.closest("[data-flush]") || e.target.closest('a[href="../"]')) S.flush();
   if (e.target.closest("[data-signout]")) {
     e.preventDefault();
     signOut();
   }
   if (e.target.closest("[data-menu]")) openMenu();
+  const err = e.target.closest("[data-err]");
+  if (err) {
+    const act = err.dataset.err;
+    if (act === "download") {
+      S.flush();
+      download(`content-${new Date().toISOString().slice(0, 10)}.json`, `${JSON.stringify(S.state.working, null, 2)}\n`);
+      toast("Downloaded content.json", { tone: "ok" });
+    } else if (act === "reload") location.reload();
+    else if (act === "retry") go(parseHash());
+  }
 }
 
 function onDocKey(e) {
@@ -625,16 +721,21 @@ function onStorage(e) {
   if (theirs === S.state.savedAt || S.hasPendingSave()) return;
   if (e.key && !/draft/i.test(e.key)) return;
   if (drawerOpen()) {
-    toast("This content was changed in another tab. Close the editor and reload to see it.", { duration: 8000 });
+    // An editor is open: don't swap the content under it. The editor offers to load the other tab's
+    // version; saving merges into it, and closing takes it in (see onAllDrawersClosed above).
+    S.markExternal();
     return;
   }
-  const next = store.getDraft() || S.state.published;
-  if (!next) return;
-  if (store.sameContent(store.normalizeContent(next), S.state.working)) {
-    S.state.savedAt = theirs;
+  takeOtherTab();
+}
+
+function takeOtherTab() {
+  const next = S.readExternal();
+  if (!next) {
+    S.state.external = false;
     return;
   }
-  S.replaceWorking(next, { source: "tab" });
+  if (!S.adoptExternal(next)) return;
   if (current) rerender();
   toast("Updated with changes made in another tab");
 }

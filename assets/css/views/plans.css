@@ -334,12 +334,19 @@
   margin-top: 4px;
   transform: rotate(-6deg);
 }
-@media (min-width: 1000px) {
+/* From 1200px the note hangs in the margin between the switch and the plan sheet. Narrower, the
+   recommended plan's ink block sits under the switch column and would cover it, so the note stays
+   in flow and pushes the sheet down. */
+@media (min-width: 1200px) {
   .view--plans .pl-bill__note {
     position: absolute;
     top: 100%;
     right: 0;
     width: max-content;
+  }
+  /* The hanging note takes no space: leave room for it above the sheet's top rule. */
+  .view--plans .pl-fees__head:has(.pl-bill__note) + .pl-plans {
+    margin-top: 7rem;
   }
 }
 @media (max-width: 999px) {
@@ -1227,11 +1234,15 @@
     width: calc(var(--w) * 100% - 6px);
   }
 }
+/* The block is a wrapping column: every line is full width, so a line that doesn't fit the lesson's
+   height wraps into a second column, which overflow:hidden drops whole. Nothing is ever sliced
+   through the glyphs, whatever the title, room or lesson length. */
 .view--plans .pl-blk__link {
   position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  flex-flow: column wrap;
+  align-content: flex-start;
+  gap: 2px;
   height: 100%;
   padding: 7px 9px 8px;
   border: 1px solid var(--hair);
@@ -1253,6 +1264,10 @@
 .view--plans .pl-lv-2 .pl-blk__link {
   border-top: var(--pl-rule-2);
 }
+.view--plans .pl-blk__link > * {
+  width: 100%;
+  flex-shrink: 0;
+}
 .view--plans .pl-blk__top {
   display: flex;
   align-items: baseline;
@@ -1260,6 +1275,7 @@
   gap: 6px;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
+  line-height: 1.25;
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
@@ -1283,6 +1299,7 @@
   margin-top: auto;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
+  line-height: 1.25;
   color: var(--fg-2);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -1295,30 +1312,31 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* While a lesson is on, the tag takes the room's line (in flow, so it never sits over text). */
 .view--plans .pl-blk__live {
   display: none;
-  position: absolute;
-  right: 6px;
-  bottom: 6px;
-  padding: 2px 5px;
+  align-self: flex-start;
+  width: auto;
+  padding: 1px 5px;
   border-radius: 2px;
-  background: var(--red);
+  background: var(--red-ink);
   color: var(--on-ink);
   font-family: var(--font-mono);
-  font-size: 0.5625rem;
-  letter-spacing: 0.1em;
+  font-size: 0.625rem;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 .view--plans .pl-blk.is-live .pl-blk__live {
   display: block;
 }
+.view--plans .pl-blk.is-live .pl-blk__room,
+.view--plans .pl-blk__live-s {
+  display: none;
+}
 /* Blocks are size containers: when a lesson is short or narrow, drop the least important lines
    rather than clipping them (the readout and the course page carry the rest). */
-@container (max-width: 160px) and (max-height: 104px) {
-  .view--plans .pl-blk__room {
-    display: none;
-  }
-}
 .view--plans .pl-blk__short {
   display: none;
 }
@@ -1337,6 +1355,18 @@
   }
   .view--plans .pl-blk__link {
     padding-inline: 7px;
+  }
+  .view--plans .pl-blk__live-l {
+    display: none;
+  }
+  .view--plans .pl-blk__live-s {
+    display: inline;
+  }
+}
+/* After the narrow rule above, so a short block drops its room even when the room could wrap. */
+@container (max-width: 160px) and (max-height: 104px) {
+  .view--plans .pl-blk__room {
+    display: none;
   }
 }
 @container (max-width: 92px) {
@@ -1652,9 +1682,9 @@
   margin-left: 4px;
   padding: 2px 5px;
   border-radius: 2px;
-  background: var(--red);
+  background: var(--red-ink);
   color: var(--on-ink);
-  font-size: 0.5625rem;
+  font-size: 0.625rem;
 }
 .view--plans .pl-row.is-live .pl-row__live {
   display: inline-block;

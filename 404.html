@@ -8,22 +8,62 @@
     <meta name="theme-color" content="#efebe3" />
     <script>
       // GitHub Pages serves this file for any unknown path, at any depth, so relative URLs can't be
-      // trusted here. Work out the site root (…github.io/<repo>/ or a custom domain's /), then:
+      // trusted here. Work out the site root, then:
       //  1. send old-style paths like /<repo>/courses straight to the matching #/ route;
       //  2. otherwise load the fonts/favicon from the root and point the links at it.
+      // On …github.io the first segment is the repository (a project site). On any other host the
+      // site may sit at the root or under a sub-path: the first route name in the path marks where
+      // the site ends, and failing that the site is found by looking for its data/content.json.
       (function () {
         var segs = location.pathname.split("/").filter(Boolean);
-        var onProject = /\.github\.io$/i.test(location.hostname) && segs.length > 0 && !/\.github\.io$/i.test(segs[0]);
-        var base = onProject ? "/" + segs[0] + "/" : "/";
-        var rest = onProject ? segs.slice(1) : segs;
         var routes = ["courses", "tutors", "resources", "plans", "quiz", "enrol"];
-        if (rest.length && routes.indexOf(rest[0].toLowerCase()) > -1 && !/\.\w+$/.test(rest[rest.length - 1])) {
-          location.replace(base + "#/" + rest.map(encodeURIComponent).join("/") + location.search);
-          return;
+        var gh = /\.github\.io$/i.test(location.hostname);
+        var dec = function (s) {
+          try { return decodeURIComponent(s); } catch (e) { return s; }
+        };
+        var prefix = function (n) {
+          return "/" + segs.slice(0, n).join("/") + (n ? "/" : "");
+        };
+        if (segs.length && !/\.\w+$/.test(segs[segs.length - 1])) {
+          for (var k = gh ? 1 : 0; k < segs.length; k++) {
+            if (routes.indexOf(dec(segs[k]).toLowerCase()) > -1) {
+              var route = segs.slice(k).map(function (s) { return encodeURIComponent(dec(s)); }).join("/");
+              location.replace(prefix(k) + "#/" + route + location.search);
+              return;
+            }
+          }
         }
-        window.__ktBase = base;
-        document.write('<link rel="icon" type="image/svg+xml" href="' + base + 'assets/img/favicon.svg">');
-        document.write('<link rel="stylesheet" href="' + base + 'assets/css/fonts.css">');
+        var head = function (b) {
+          var icon = document.createElement("link");
+          icon.rel = "icon";
+          icon.type = "image/svg+xml";
+          icon.href = b + "assets/img/favicon.svg";
+          var fonts = document.createElement("link");
+          fonts.rel = "stylesheet";
+          fonts.href = b + "assets/css/fonts.css";
+          document.head.appendChild(icon);
+          document.head.appendChild(fonts);
+        };
+        window.__ktApplyBase = function (b) {
+          window.__ktBase = b;
+          var links = document.querySelectorAll("[data-base]");
+          for (var i = 0; i < links.length; i++) links[i].setAttribute("href", b + (links[i].getAttribute("data-base") || ""));
+        };
+        var probing = !gh && segs.length > 1 && !!window.fetch;
+        window.__ktBase = gh ? prefix(Math.min(1, segs.length)) : "/";
+        if (!probing) return head(window.__ktBase);
+        var n = 1; // shallowest first: /<sub-path>/ is the usual case
+        (function probe() {
+          if (n >= segs.length) return head(window.__ktBase);
+          var candidate = prefix(n++);
+          fetch(candidate + "data/content.json", { method: "HEAD", cache: "no-store" })
+            .then(function (r) {
+              if (!r.ok) return probe();
+              window.__ktApplyBase(candidate);
+              head(candidate);
+            })
+            .catch(probe);
+        })();
       })();
     </script>
     <style>
@@ -31,7 +71,7 @@
         --paper: #efebe3;
         --ink: #161513;
         --ink-2: #3b3934;
-        --ink-3: #6b675e;
+        --ink-3: #5e5a52;
         --red: #e0442a;
         --red-ink: #b8321c;
         --line: rgba(22, 21, 19, 0.14);
@@ -104,11 +144,7 @@
     </main>
     <footer><span>— End of paper —</span><span>[0 marks]</span></footer>
     <script>
-      (function () {
-        var base = window.__ktBase || "./";
-        var links = document.querySelectorAll("[data-base]");
-        for (var i = 0; i < links.length; i++) links[i].setAttribute("href", base + (links[i].getAttribute("data-base") || ""));
-      })();
+      if (window.__ktApplyBase) window.__ktApplyBase(window.__ktBase || "/");
     </script>
   </body>
 </html>

@@ -4,7 +4,8 @@ import { html, icon, render, penTick } from "../../../assets/js/ui.js";
 import * as store from "../../../assets/js/store.js";
 import { state, commit, subscribe, status, sectionLabel, changedSections } from "../state.js";
 import { $, fmtAgo, two, gsap, reduced } from "../dom.js";
-import { toMin } from "../schemas.js";
+import { toMin, entries } from "../schemas.js";
+import { ownerName } from "./common.js";
 
 const GH_VERIFIED = "kt.admin.ghVerified.v1";
 export function ghVerified() {
@@ -124,11 +125,14 @@ function teachingDay(c, now) {
 const STATUS_LABEL = { new: "New", contacted: "Contacted", enrolled: "Enrolled", archived: "Archived" };
 
 function renderBody(ctx) {
-  const c = state.working;
+  const w = state.working;
+  // Read-only view of the content with unreadable list entries left out, so one bad entry in a
+  // hand-edited content.json can't take the whole overview down.
+  const c = { ...w, courses: entries(w.courses), timetable: entries(w.timetable), tutors: entries(w.tutors), levels: entries(w.levels) };
   const now = new Date();
   const hour = now.getHours();
   const greet = hour < 5 ? "Working late" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-  const owner = firstName(c.tutors?.[0]?.name);
+  const owner = ownerName(w);
   const enquiries = store.listEnquiries();
   const fresh = enquiries.filter((e) => e.status === "new");
   const st = status();
@@ -229,7 +233,9 @@ function renderBody(ctx) {
         ? html`Saved in this browser${state.savedAt ? ` ${fmtAgo(state.savedAt)}` : ""}, not on the live site yet: ${changed.map(sectionLabel).join(", ")}.`
         : st.tone === "live"
           ? state.publishedAt
-            ? "Published from this browser. GitHub Pages takes a minute or two to update the live site."
+            ? state.pulled
+              ? "This browser matches the latest version on GitHub. GitHub Pages takes a minute or two to show it on the live site."
+              : "Published from this browser. GitHub Pages takes a minute or two to update the live site."
             : "The live site matches this browser. Your edits save here first and only reach visitors when you publish."
           : st.text}</p>
       <div class="ov-status__acts">

@@ -29,6 +29,19 @@ export function viewHead(ctx, { title, italic = "", lead = "", actions = "", asi
   </header>`;
 }
 
+/**
+ * The person who runs the site, for the greeting and for signing replies — never "whoever is first
+ * in the tutors list". It's the wordmark when that is a single name a tutor also goes by (the
+ * shipped "Kavish"), otherwise nobody in particular.
+ */
+export function ownerName(c) {
+  const mark = String(c?.site?.wordmark || "").trim();
+  if (!mark || /\s/.test(mark)) return "";
+  const first = (n) => String(n || "").trim().split(/\s+/)[0].replace(/[.,]$/, "").toLowerCase();
+  const tutors = Array.isArray(c?.tutors) ? c.tutors : [];
+  return tutors.some((t) => t && typeof t === "object" && first(t.name) === mark.toLowerCase()) ? mark : "";
+}
+
 export const siteLink = (href, label = "View on site") =>
   html`<a class="a-btn a-btn--ghost a-btn--sm" href="${href}" target="_blank" rel="noopener" data-flush>${label}${icon("arrow-up-right", { size: 16 })}</a>`;
 

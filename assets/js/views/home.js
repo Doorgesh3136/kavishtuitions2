@@ -12,7 +12,16 @@ const word = (n) => (Number.isInteger(n) && n >= 0 && n < WORDS.length ? WORDS[n
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 const ROMAN = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x", "xi", "xii"];
 const roman = (i) => ROMAN[i] || String(i + 1);
-const fmtNum = (v) => (Number.isFinite(Number(v)) ? Number(v).toLocaleString("en-GB") : String(v ?? ""));
+// Decimal places a stat is written with (2.5 → 1), capped at 2, so the counter never rounds it away.
+const decimalsOf = (v) => Math.min(2, (String(Number(v)).split(".")[1] || "").length);
+const fmtNum = (v, dp = decimalsOf(v)) =>
+  Number.isFinite(Number(v)) ? Number(v).toLocaleString("en-GB", { minimumFractionDigits: dp, maximumFractionDigits: dp }) : String(v ?? "");
+// content.json is hand-editable: a list field may arrive as a single string, or as something else entirely.
+const asList = (v) =>
+  (Array.isArray(v) ? v : typeof v === "string" ? [v] : [])
+    .map((x) => (typeof x === "string" || typeof x === "number" ? String(x).trim() : ""))
+    .filter(Boolean);
+const items = (v) => (Array.isArray(v) ? v.filter((x) => x && typeof x === "object") : []);
 const firstSentence = (s) => {
   const t = String(s || "").trim();
   const m = t.match(/^(.+?[.!?])\s+(.+)$/s);
@@ -34,6 +43,12 @@ const splitGrade = (name) => {
   return m && m[1] ? { label: m[1].trim(), num: m[2].trim() } : { label: "", num: String(name || "") };
 };
 const modeLabel = { online: "Online", "in-person": "In person", hybrid: "Hybrid" };
+// "Room B · Quatre Bornes" → ["Room B", "Quatre Bornes"]: the place can drop to its own line on a narrow card.
+const roomParts = (room) => {
+  const s = String(room ?? "").trim();
+  const i = s.indexOf(" · ");
+  return i > 0 ? [s.slice(0, i), s.slice(i + 3)] : [s, ""];
+};
 const toMin = (hhmm) => {
   const [h, m] = String(hhmm || "0:0").split(":").map(Number);
   return (h || 0) * 60 + (m || 0);
@@ -160,7 +175,7 @@ function bandSection(content, courses) {
 }
 
 function methodSection(content) {
-  const steps = (content.method || []).filter((m) => m && (m.title || m.text));
+  const steps = items(content.method).filter((m) => m.title || m.text);
   if (!steps.length) return "";
   return html`<section class="section home-method" aria-labelledby="home-method-title">
     <div class="container home-method__grid">
@@ -209,7 +224,7 @@ function courseCard(content, c, i) {
   const low = hasSeats && left > 0 && left <= 3;
   const exam = levelExam(content, c.level);
   const idBase = `home-c-${i}`;
-  const topics = (c.topics || []).filter(Boolean);
+  const topics = asList(c.topics);
   return html`<li class="home-feat__slot">
     <a class="home-course" href="#/courses/${encodeURIComponent(c.id)}" data-tilt data-cursor="View"
       aria-labelledby="${idBase}-t ${idBase}-c" aria-describedby="${idBase}-d">
@@ -231,11 +246,14 @@ function courseCard(content, c, i) {
               <p class="home-course__label"><span>Next sessions</span>${c.mode ? html`<span class="badge badge--${c.mode}">${modeLabel[c.mode] || c.mode}</span>` : ""}</p>
               <ul>
                 ${sessions.map(
-                  (s, k) => html`<li>
-                    <span class="home-course__day">${k === 0 ? html`<i>Next</i>` : ""}${dayShort(s.day)}</span>
-                    <span class="home-course__time">${s.start}–${s.end}</span>
-                    <span class="home-course__room">${s.room}</span>
-                  </li>`
+                  (s, k) => {
+                    const [room, place] = roomParts(s.room);
+                    return html`<li>
+                      <span class="home-course__day">${k === 0 ? html`<i>Next</i>` : ""}${dayShort(s.day)}</span>
+                      <span class="home-course__time">${s.start}–${s.end}</span>
+                      <span class="home-course__room">${room}${place ? html`<span class="home-course__place"><span class="home-course__sep"> · </span>${place}</span>` : ""}</span>
+                    </li>`;
+                  }
                 )}
               </ul>
             </div>`
@@ -265,7 +283,7 @@ function courseCard(content, c, i) {
 function featuredSection(content, courses) {
   const featured = courses.filter((c) => c.featured);
   if (!featured.length) return "";
-  const cats = (content.categories || [])
+  const cats = items(content.categories)
     .map((cat) => ({ name: cat.name, n: courses.filter((c) => c.category === cat.id).length }))
     .filter((x) => x.n);
   const total = featured.length + 1;
@@ -307,7 +325,7 @@ function featuredSection(content, courses) {
 }
 
 function levelsSection(content, courses) {
-  const levels = (content.levels || []).filter((l) => l && l.id);
+  const levels = items(content.levels).filter((l) => l.id);
   if (!levels.length) return "";
   const n = levels.length;
   return html`<section class="section section--ink home-levels" aria-labelledby="home-levels-title" style="--n:${n}">
@@ -354,8 +372,8 @@ function tutorSection(content) {
   const photo = safeUrl(t.photo);
   const years = Number(t.years);
   const since = Number.isFinite(years) && years > 0 ? new Date().getFullYear() - years : null;
-  const subjects = (t.subjects || []).filter(Boolean);
-  const creds = (t.credentials || []).filter(Boolean);
+  const subjects = asList(t.subjects);
+  const creds = asList(t.credentials);
   const mono = initials(t.name) || "?";
   return html`<section class="section home-tutor" aria-labelledby="home-tutor-title">
     <div class="container home-tutor__grid">
@@ -389,7 +407,7 @@ function tutorSection(content) {
 }
 
 function statsSection(content) {
-  const stats = (content.stats || []).filter((s) => s && s.label != null && Number.isFinite(Number(s.value)));
+  const stats = items(content.stats).filter((s) => s.label != null && s.value !== "" && s.value !== null && Number.isFinite(Number(s.value)));
   if (!stats.length) return "";
   return html`<section class="section section--tight home-stats" aria-labelledby="home-stats-title">
     <div class="container home-stats__grid">
@@ -400,16 +418,19 @@ function statsSection(content) {
       <div class="home-stats__sheet" data-reveal style="--cols:${Math.min(stats.length, 4)}">
         <p class="home-stats__cap" aria-hidden="true"><span>For examiner’s use</span><span>${roman(0)}–${roman(stats.length - 1)}</span></p>
         <ul class="home-stats__list">
-          ${stats.map(
-            (s, i) => html`<li class="home-stat">
+          ${stats.map((s, i) => {
+            const text = `${s.prefix || ""}${fmtNum(s.value)}${s.suffix || ""}`;
+            // --len lets a long figure ("Rs 2,500") shrink to its cell instead of running into the next.
+            return html`<li class="home-stat" style="--len:${Math.max(3, text.length)}">
               <span class="home-stat__q" aria-hidden="true">${roman(i)}</span>
               <span class="home-stat__val"
                 data-count="${Number(s.value)}"
+                data-count-decimals="${decimalsOf(s.value)}"
                 data-count-prefix="${s.prefix || ""}"
-                data-count-suffix="${s.suffix || ""}">${s.prefix || ""}${fmtNum(s.value)}${s.suffix || ""}</span>
+                data-count-suffix="${s.suffix || ""}">${text}</span>
               <span class="home-stat__label">${s.label}</span>
-            </li>`
-          )}
+            </li>`;
+          })}
         </ul>
       </div>
     </div>
@@ -439,13 +460,13 @@ function voicesSection(content) {
       <div class="home-deck${n > 1 ? " is-deck" : ""}" data-deck data-home-reveal
         role="region" aria-roledescription="carousel" aria-label="What students and parents say"${n > 1 ? html` tabindex="0"` : ""}>
         ${list.map(
-          (t, i) => html`<figure class="home-card" data-card="${i}" role="group" aria-roledescription="card" aria-label="${i + 1} of ${n}">
+          (t, i) => html`<figure class="home-card" data-card="${i}" aria-roledescription="card" aria-label="${i + 1} of ${n}">
             <div class="home-card__head">
               <span class="home-card__no">No. ${pad(i + 1)}</span>
               ${t.detail ? html`<span class="home-card__detail">${t.detail}</span>` : ""}
               ${penTick({ cls: "home-card__tick" })}
             </div>
-            <blockquote class="home-card__quote${t.quote.length < 90 ? " is-short" : ""}"><p>${t.quote}</p></blockquote>
+            <blockquote class="home-card__quote${String(t.quote).length < 90 ? " is-short" : ""}"><p>${t.quote}</p></blockquote>
             ${t.name ? html`<figcaption class="home-card__name">— ${t.name}</figcaption>` : ""}
           </figure>`
         )}
@@ -919,17 +940,26 @@ export default {
   title: "Home",
   scene: "hero",
   render({ content }) {
-    const courses = visible(content.courses);
+    const courses = visible(content.courses).filter((c) => c && c.id);
+    // content.json can be hand-edited: one malformed field should cost its own section, not the page.
+    const part = (fn, ...args) => {
+      try {
+        return fn(content, ...args);
+      } catch (e) {
+        console.warn(`[home] skipped ${fn.name}:`, e);
+        return "";
+      }
+    };
     return html`<section class="view view--home" data-view="home">
-      ${heroSection(content, courses)}
-      ${bandSection(content, courses)}
-      ${methodSection(content)}
-      ${featuredSection(content, courses)}
-      ${levelsSection(content, courses)}
-      ${tutorSection(content)}
-      ${statsSection(content)}
-      ${voicesSection(content)}
-      ${placesSection(content, courses)}
+      ${part(heroSection, courses)}
+      ${part(bandSection, courses)}
+      ${part(methodSection)}
+      ${part(featuredSection, courses)}
+      ${part(levelsSection, courses)}
+      ${part(tutorSection)}
+      ${part(statsSection)}
+      ${part(voicesSection)}
+      ${part(placesSection, courses)}
     </section>`;
   },
   mount(root, ctx) {

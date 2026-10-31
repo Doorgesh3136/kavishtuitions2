@@ -458,12 +458,15 @@ html.lenis.lenis-stopped {
   content: "]";
 }
 
-/* Masked lines produced by data-split / motion.splitLines. Slight padding keeps descenders. */
-.split-line-mask {
+/* Masked lines produced by data-split / motion.splitLines. Slight padding keeps descenders.
+   SplitText names a mask by suffixing each word of the line class, so lines classed
+   "split-line" get masks classed "split-mask-line-mask". Once revealed, the masks stop clipping
+   so pen marks (circles, underlines) drawn around a word show in full. */
+.split-mask-line-mask {
   padding-bottom: 0.09em;
   margin-bottom: -0.09em;
 }
-.is-revealed .split-line-mask {
+.is-revealed .split-mask-line-mask {
   overflow: visible !important;
 }
 
@@ -1113,6 +1116,7 @@ a.card::after,
 }
 .textarea {
   --rule-h: 2rem;
+  --rule-c: var(--hair-strong);
   min-height: calc(var(--rule-h) * 4 + 6px);
   padding: 2px 0 0;
   line-height: var(--rule-h);
@@ -1122,14 +1126,24 @@ a.card::after,
     to bottom,
     transparent 0,
     transparent calc(var(--rule-h) - 1px),
-    var(--hair-strong) calc(var(--rule-h) - 1px),
-    var(--hair-strong) var(--rule-h)
+    var(--rule-c) calc(var(--rule-h) - 1px),
+    var(--rule-c) var(--rule-h)
   );
   background-position: 0 2px;
   background-attachment: local;
 }
+.textarea:hover {
+  --rule-c: color-mix(in srgb, var(--fg) 40%, transparent);
+}
+/* Focus: the ruled lines turn to ink (as an input's underline does) and an ink margin rule
+   appears just left of the writing area: the left edge of an outline, the rest clipped away.
+   An outline (unlike a shadow) survives forced-colours mode; no padding change, so no shift. */
 .textarea:focus {
+  --rule-c: color-mix(in srgb, var(--fg) 62%, transparent);
   box-shadow: none;
+  outline: 2px solid var(--fg);
+  outline-offset: 6px;
+  clip-path: inset(0 0 0 -10px);
   background-color: color-mix(in srgb, var(--fg) 3%, transparent);
 }
 .field.is-invalid :is(.input, .select),
@@ -1531,6 +1545,9 @@ details.accordion[open]::details-content {
   height: 100lvh;
   pointer-events: none;
   outline: none;
+  /* Never animate the z-index drop when the loader leaves (the reduced-motion rule gives every
+     element a short transition), or the models flash in front of the page for a moment. */
+  transition: none;
 }
 html.is-loading #scene {
   z-index: calc(var(--z-loader) + 1);
@@ -1771,6 +1788,10 @@ html.boot-failed .boot-error {
   display: grid;
 }
 html.boot-failed .loader {
+  display: none;
+}
+/* Belt and braces: once the app has booted, the "didn't start" notice can never cover it. */
+html.is-booted .boot-error {
   display: none;
 }
 .boot-error__title,
@@ -2077,6 +2098,7 @@ html.is-loading .scroll-progress {
 }
 .announce__msg {
   color: var(--on-ink);
+  text-wrap: balance; /* no lone "12." on a second line at phone widths */
 }
 .announce__link {
   display: inline-flex;
@@ -2286,6 +2308,18 @@ html.is-loading .scroll-progress {
   margin-top: clamp(72px, 9vw, 136px);
   padding-top: 36px;
   border-top: 1px solid var(--on-ink-line);
+}
+/* Pages that end on their own call to action (and the enrol page) skip the footer's sign. */
+.site-footer[data-cta="off"] .footer__inner {
+  padding-top: clamp(64px, 7vw, 104px);
+}
+.site-footer[data-cta="off"] .footer__sign {
+  display: none;
+}
+.site-footer[data-cta="off"] .footer__cols {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 .footer__col {
   grid-column: span 6;
@@ -2654,6 +2688,27 @@ html.is-loading .scroll-progress {
 }
 html.is-loading .draft-banner {
   visibility: hidden;
+}
+/* Phones: the status keeps its dot on the first row; the actions sit on a row of their own,
+   aligned with the text (separators would otherwise start a wrapped line). */
+@media (max-width: 599px) {
+  .draft-banner__text {
+    flex: 1 1 calc(100% - 18px);
+    min-width: 0;
+  }
+  .draft-banner__dot {
+    align-self: flex-start;
+    margin-top: 0.3em;
+  }
+  .draft-banner__sep {
+    display: none;
+  }
+  .draft-banner__text ~ .draft-banner__link {
+    margin-right: 6px;
+  }
+  .draft-banner__text + .draft-banner__sep + .draft-banner__link {
+    margin-left: 18px;
+  }
 }
 
 /* ------------------------------------------------------------------ custom cursor (fine pointers only) */

@@ -40,6 +40,10 @@ const toMin = (hhmm) => {
   return (h || 0) * 60 + (m || 0);
 };
 const slug = (id) => String(id || "").replace(/[^a-zA-Z0-9_-]/g, "-");
+// List fields are edited by hand in content.json: a lone string ("Mathematics") counts as one item,
+// anything else that isn't a list as none, so one typo can't take the page down.
+const listOf = (v) => (Array.isArray(v) ? v : typeof v === "string" && v.trim() ? [v] : []);
+const textList = (v) => listOf(v).map((s) => (typeof s === "string" || typeof s === "number" ? String(s).trim() : "")).filter(Boolean);
 
 function coursesFor(content, tutorId) {
   return visible(content.courses).filter((c) => c.tutorId === tutorId);
@@ -120,7 +124,7 @@ function tile(t, cls = "") {
 /* ------------------------------------------------------------------ shared blocks */
 
 function credsBlock(t, id, h = "h3") {
-  const creds = (t.credentials || []).map((c) => String(c || "").trim()).filter(Boolean);
+  const creds = textList(t.credentials);
   if (!creds.length) return "";
   return html`<div class="tt-block">
     <${raw(h)} class="tt-label" id="${id}">Qualifications</${raw(h)}>
@@ -131,7 +135,7 @@ function credsBlock(t, id, h = "h3") {
 }
 
 function subjectsBlock(t, id, h = "h3") {
-  const subjects = (t.subjects || []).map((s) => String(s || "").trim()).filter(Boolean);
+  const subjects = textList(t.subjects);
   if (!subjects.length) return "";
   return html`<div class="tt-block">
     <${raw(h)} class="tt-label" id="${id}">Teaches</${raw(h)}>
@@ -259,7 +263,7 @@ function rosterSection(content, others, offset) {
           const i = k + offset;
           const id = slug(t.id);
           const courses = coursesFor(content, t.id);
-          const subjects = (t.subjects || []).map((s) => String(s || "").trim()).filter(Boolean);
+          const subjects = textList(t.subjects);
           const years = yearsOf(t);
           return html`<li class="tt-person" id="tutor-${id}" data-tutor="${t.id}">
             <h3 class="tt-person__h">
@@ -296,7 +300,7 @@ function rosterSection(content, others, offset) {
 }
 
 function weekSection(content, index) {
-  const steps = (content.method || []).filter((m) => m && (m.title || m.text));
+  const steps = listOf(content.method).filter((m) => m && (m.title || m.text));
   if (!steps.length) return "";
   const n = steps.length;
   return html`<section class="section section--ink tt-week" aria-labelledby="tt-week-title" style="--n:${n}">

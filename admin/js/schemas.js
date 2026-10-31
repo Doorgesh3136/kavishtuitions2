@@ -3,8 +3,16 @@
 import { html } from "../../assets/js/ui.js";
 import * as store from "../../assets/js/store.js";
 
-const { formatRs, levelName, categoryName, byId, slugify, sessionsFor, dayShort } = store;
+const { formatRs, levelName, categoryName, byId, slugify, dayShort } = store;
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/** Real list entries only (hand-edited JSON can leave null, numbers or strings in a list). */
+export const entries = (v) => (Array.isArray(v) ? v.filter((x) => !!x && typeof x === "object" && !Array.isArray(x)) : []);
+/** Sessions for a course, skipping unreadable timetable entries. */
+const sessionsFor = (content, id) => store.sessionsFor({ ...content, timetable: entries(content?.timetable) }, id);
+const first = (v) => entries(v)[0];
+/** A list-of-text field, tolerating a lone string or stray nulls. */
+const texts = (v) => (Array.isArray(v) ? v : typeof v === "string" && v.trim() ? [v] : []).filter((x) => x != null && typeof x !== "object").map(String);
 
 export const MODES = [
   { value: "hybrid", label: "Hybrid" },
@@ -36,7 +44,7 @@ export const courses = {
   filters: [{ key: "level", label: "Level", options: "levels" }],
   siteLink: (c) => `../#/courses/${encodeURIComponent(c.id)}`,
   titleOf: (c) => c.title,
-  search: (c, content) => [c.title, c.code, c.summary, levelName(content, c.level), categoryName(content, c.category), ...(c.topics || []), byId(content.tutors, c.tutorId)?.name].join(" "),
+  search: (c, content) => [c.title, c.code, c.summary, levelName(content, c.level), categoryName(content, c.category), ...texts(c.topics), byId(content.tutors, c.tutorId)?.name].join(" "),
   row: (c, i, content) => {
     const sessions = sessionsFor(content, c.id);
     return {
@@ -54,8 +62,8 @@ export const courses = {
     id: "",
     title: "",
     code: "",
-    level: content.levels[0]?.id || "",
-    category: content.categories[0]?.id || "",
+    level: first(content.levels)?.id || "",
+    category: first(content.categories)?.id || "",
     summary: "",
     description: "",
     topics: [],
@@ -63,7 +71,7 @@ export const courses = {
     fee: 1800,
     seats: 12,
     seatsLeft: 12,
-    tutorId: content.tutors[0]?.id || "",
+    tutorId: first(content.tutors)?.id || "",
     featured: false,
     visible: true,
   }),
@@ -72,7 +80,7 @@ export const courses = {
     return n ? `${plural(n, "timetable session")} for this course will be removed as well.` : "";
   },
   onDelete: (c, content) => {
-    content.timetable = (content.timetable || []).filter((s) => s.courseId !== c.id);
+    content.timetable = (content.timetable || []).filter((s) => !s || s.courseId !== c.id);
   },
   groups: [
     {
@@ -139,9 +147,9 @@ export const tutors = {
   makeId: (t) => slugify(t.name),
   siteLink: () => "../#/tutors",
   titleOf: (t) => t.name,
-  search: (t) => [t.name, t.role, t.bio, ...(t.subjects || [])].join(" "),
+  search: (t) => [t.name, t.role, t.bio, ...texts(t.subjects)].join(" "),
   row: (t, i, content) => {
-    const n = (content.courses || []).filter((c) => c.tutorId === t.id).length;
+    const n = entries(content.courses).filter((c) => c.tutorId === t.id).length;
     const initials = (String(t.name || "").match(/\p{L}[\p{L}'’-]*/gu) || ["?"]).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
     return {
       lead: initials,
@@ -152,11 +160,11 @@ export const tutors = {
   },
   create: () => ({ id: "", name: "", role: "", bio: "", subjects: [], credentials: [], years: null, photo: "", visible: true }),
   deleteNote: (t, content) => {
-    const n = (content.courses || []).filter((c) => c.tutorId === t.id).length;
+    const n = entries(content.courses).filter((c) => c.tutorId === t.id).length;
     return n ? `${plural(n, "course")} name this tutor; they'll show no tutor until you pick another.` : "";
   },
   onDelete: (t, content) => {
-    for (const c of content.courses || []) if (c.tutorId === t.id) c.tutorId = "";
+    for (const c of entries(content.courses)) if (c.tutorId === t.id) c.tutorId = "";
   },
   cascade: ["courses"],
   groups: [
@@ -218,13 +226,13 @@ export const plans = {
   makeId: (p) => slugify(p.name),
   siteLink: () => "../#/plans",
   titleOf: (p) => p.name,
-  search: (p) => [p.name, p.description, ...(p.features || [])].join(" "),
+  search: (p) => [p.name, p.description, ...texts(p.features)].join(" "),
   row: (p) => {
     const saving = p.monthly && p.termly ? Math.round((1 - p.termly / (p.monthly * 3)) * 100) : 0;
     return {
       lead: formatRs(p.monthly),
       title: p.name,
-      meta: [p.termly ? `${formatRs(p.termly)} a term${saving > 0 ? ` (saves ${saving}%)` : ""}` : "", plural((p.features || []).length, "feature")],
+      meta: [p.termly ? `${formatRs(p.termly)} a term${saving > 0 ? ` (saves ${saving}%)` : ""}` : "", plural(texts(p.features).length, "feature")],
       tags: [p.highlighted ? { label: "Highlighted", tone: "ink" } : null],
     };
   },
@@ -264,7 +272,7 @@ export const plans = {
     },
   ],
   notes: (p, content) => {
-    const others = (content.plans || []).filter((x) => x.highlighted && x.id !== p.id);
+    const others = entries(content.plans).filter((x) => x.highlighted && x.id !== p.id);
     return p.highlighted && others.length
       ? html`<p class="note note--warn"><span class="note__k">Note</span>“${others[0].name}” is also highlighted. Highlight one plan so the choice is clear.</p>`
       : "";
@@ -293,7 +301,7 @@ export const resources = {
     meta: [levelName(content, r.level), categoryName(content, r.category), r.year],
     tags: [r.url ? { label: "Link", tone: "plain" } : { label: "On request", tone: "plain" }],
   }),
-  create: (content) => ({ id: "", title: "", type: "worksheet", level: content.levels[0]?.id || "", category: content.categories[0]?.id || "", year: new Date().getFullYear(), description: "", url: "", visible: true }),
+  create: (content) => ({ id: "", title: "", type: "worksheet", level: first(content.levels)?.id || "", category: first(content.categories)?.id || "", year: new Date().getFullYear(), description: "", url: "", visible: true }),
   fields: [
     { key: "title", label: "Title", required: true, autofocus: true, placeholder: "4024 Paper 2, November 2024: worked solutions" },
     { key: "type", label: "Type", type: "select", options: RESOURCE_TYPES, required: true, width: "half" },
@@ -336,10 +344,10 @@ export const levels = {
   makeId: (l) => slugify(l.name),
   titleOf: (l) => l.name,
   search: (l) => [l.name, l.exam, l.summary].join(" "),
-  row: (l, i, content) => ({ lead: l.id, title: l.name, meta: [l.exam, plural((content.courses || []).filter((c) => c.level === l.id).length, "course")] }),
+  row: (l, i, content) => ({ lead: l.id, title: l.name, meta: [l.exam, plural(entries(content.courses).filter((c) => c.level === l.id).length, "course")] }),
   create: () => ({ id: "", name: "", exam: "", summary: "" }),
   deleteNote: (l, content) => {
-    const n = (content.courses || []).filter((c) => c.level === l.id).length;
+    const n = entries(content.courses).filter((c) => c.level === l.id).length;
     return n ? `${plural(n, "course")} use this level. Move them to another level first, or they won't appear under any level.` : "";
   },
   fields: [
@@ -358,10 +366,10 @@ export const categories = {
   makeId: (c) => slugify(c.name),
   titleOf: (c) => c.name,
   search: (c) => c.name,
-  row: (c, i, content) => ({ lead: c.id, title: c.name, meta: [plural((content.courses || []).filter((x) => x.category === c.id).length, "course")] }),
+  row: (c, i, content) => ({ lead: c.id, title: c.name, meta: [plural(entries(content.courses).filter((x) => x.category === c.id).length, "course")] }),
   create: () => ({ id: "", name: "" }),
   deleteNote: (c, content) => {
-    const n = (content.courses || []).filter((x) => x.category === c.id).length;
+    const n = entries(content.courses).filter((x) => x.category === c.id).length;
     return n ? `${plural(n, "course")} are in this group. Move them first so the subject filter still finds them.` : "";
   },
   fields: [{ key: "name", label: "Name", required: true, autofocus: true, placeholder: "Sciences" }],
@@ -377,9 +385,10 @@ export const stats = {
   row: (s) => ({ lead: `${s.prefix || ""}${s.value ?? ""}${s.suffix || ""}`, title: s.label }),
   create: () => ({ value: null, prefix: "", suffix: "", label: "" }),
   onDuplicate: (s) => (s.label = `${s.label} (copy)`),
-  editorIntro: "Keep these modest and checkable. Parents trust “12 students at most” more than “10,000+ success stories”.",
+  editorIntro: "Keep these modest and checkable. Parents trust “12 students at most” more than “10,000+ success stories”. Use whole numbers: the homepage counts up to them.",
   fields: [
-    { key: "value", label: "Number", type: "number", required: true, min: 0, autofocus: true, width: "third" },
+    // Whole numbers: the homepage counts up to the value with no decimals.
+    { key: "value", label: "Number", type: "number", required: true, integer: true, min: 0, step: 1, autofocus: true, width: "third" },
     { key: "prefix", label: "Before", placeholder: "Rs", width: "third", maxlength: 6 },
     { key: "suffix", label: "After", placeholder: "h", width: "third", maxlength: 6 },
     { key: "label", label: "Label", required: true, placeholder: "students in a group, at most" },
@@ -417,18 +426,18 @@ export const questions = {
     { key: "level", label: "Level", options: "levels" },
   ],
   titleOf: (q) => q.prompt,
-  search: (q, content) => [q.prompt, ...(q.options || []), q.explain, categoryName(content, q.category), levelName(content, q.level)].join(" "),
+  search: (q, content) => [q.prompt, ...texts(q.options), q.explain, categoryName(content, q.category), levelName(content, q.level)].join(" "),
   row: (q, i, content) => {
     const ok = Array.isArray(q.options) && q.options.length >= 2 && q.answer >= 0 && q.answer < q.options.length;
     return {
       num: `Q.${String(i + 1).padStart(2, "0")}`,
       title: q.prompt,
-      meta: [categoryName(content, q.category), levelName(content, q.level), plural((q.options || []).length, "option"), ok ? `answer ${"ABCDEF"[q.answer]}` : ""],
+      meta: [categoryName(content, q.category), levelName(content, q.level), plural(texts(q.options).length, "option"), ok ? `answer ${"ABCDEF"[q.answer]}` : ""],
       tags: [ok ? null : { label: "Check answer", tone: "red" }],
       warn: !ok,
     };
   },
-  create: (content) => ({ id: "", category: content.categories[0]?.id || "", level: content.levels[0]?.id || "", prompt: "", options: ["", "", "", ""], answer: 0, explain: "" }),
+  create: (content) => ({ id: "", category: first(content.categories)?.id || "", level: first(content.levels)?.id || "", prompt: "", options: ["", "", "", ""], answer: 0, explain: "" }),
   onDuplicate: (q) => (q.prompt = `${q.prompt} (copy)`),
   groups: [
     {
@@ -473,13 +482,13 @@ export const results = {
   search: (r) => [r.title, r.text].join(" "),
   row: (r, i, content) => ({ lead: `${r.min ?? "?"}–${r.max ?? "?"}%`, title: r.title, meta: [r.recommend ? `Suggests ${levelName(content, r.recommend)}` : "No level suggested"] }),
   create: (content) => {
-    const list = content.quiz?.results || [];
+    const list = entries(content.quiz?.results);
     const top = list.reduce((m, r) => Math.max(m, Number(r.max) || 0), -1);
     const min = Math.min(100, top + 1);
     return { min, max: 100, title: "", text: "", recommend: "" };
   },
   insertAt: (r, list) => {
-    const i = list.findIndex((x) => Number(x.min) > Number(r.min));
+    const i = list.findIndex((x) => x && Number(x.min) > Number(r.min));
     return i < 0 ? list.length : i;
   },
   fields: [
@@ -519,7 +528,7 @@ export const sessions = {
     const c = byId(content?.courses, s.courseId);
     return c ? `${c.code ? `${c.code} · ` : ""}${c.title}` : "Session";
   },
-  create: (content) => ({ id: "", day: "mon", start: "15:30", end: "17:00", courseId: content.courses[0]?.id || "", room: "" }),
+  create: (content) => ({ id: "", day: "mon", start: "15:30", end: "17:00", courseId: first(content.courses)?.id || "", room: "" }),
   fields: [
     { key: "courseId", label: "Course", type: "select", options: "courses", required: true, autofocus: true },
     { key: "day", label: "Day", type: "select", options: "days", required: true, width: "third" },

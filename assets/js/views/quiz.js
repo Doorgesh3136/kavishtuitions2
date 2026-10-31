@@ -151,15 +151,70 @@ function tally(run, keyOf) {
   return [...map.values()];
 }
 
+/* The mark scheme's bands are written for the mixed paper, where the score itself points to a stage.
+   A paper for one stage only says how secure that stage is, so its score is read against the stage the
+   student chose, never more than one stage away: the bottom band steps back one stage (when there is
+   one), a middle band stays, and the top band stays too, with the next stage's paper as the real test
+   of moving up. A Grade 7–9 student who aces their paper is not sent straight to A Level. */
+function relative(m, run, pct, band) {
+  const order = m.levels.map((l) => l.id);
+  const i = order.indexOf(run.level);
+  const n = m.bands.length;
+  const bi = band ? m.bands.indexOf(band) : -1;
+  const tier = n >= 2 && bi >= 0 ? (bi === 0 ? "low" : bi === n - 1 ? "high" : "mid") : pct < 40 ? "low" : pct >= 75 ? "high" : "mid";
+  const prev = i > 0 ? order[i - 1] : "";
+  const next = i >= 0 && i < order.length - 1 ? order[i + 1] : "";
+  // The next stage's paper, in the same subject when there are questions for it.
+  const nextPaper = tier !== "high" || !next ? "" : pool(m, run.paper, next).length ? run.paper : pool(m, "all", next).length ? "all" : "";
+  return { tier, chosen: run.level, level: tier === "low" && prev ? prev : run.level, prev, next, nextPaper };
+}
+
+/** A stage name kept on one line in running text ("Grade 10–11" never breaks at the dash). */
+const stage = (m, id) => html`<span class="qz-nw">${levelName(m.content, id)}</span>`;
+
+/** Result copy for a single-stage paper, in the voice of the mark scheme. */
+function relativeCopy(m, rel) {
+  const name = levelName(m.content, rel.chosen);
+  const L = stage(m, rel.chosen);
+  const P = rel.prev ? stage(m, rel.prev) : "";
+  const N = rel.next ? stage(m, rel.next) : "";
+  if (rel.tier === "high") {
+    return {
+      title: `Secure at ${name}`,
+      accent: name.split(/\s+/).length,
+      text: N
+        ? html`The ${L} questions came out clean. A ${L} group keeps that method sharp. Whether ${N} work is within reach is ${rel.nextPaper ? html`what the ${N} paper is for: try it next.` : "something a free trial lesson will show."}`
+        : html`You handled the ${L} questions with clean method. A ${L} group will suit you: the work there is depth and speed. Choose your subjects and come to a free trial lesson.`,
+    };
+  }
+  if (rel.tier === "mid") {
+    return {
+      title: `Ready for ${name} work`,
+      accent: 1,
+      text: html`The core of ${L} is mostly there. What is missing is accuracy under time and knowing what each question wants, and that is what a ${L} group, with work marked every week, is for.`,
+    };
+  }
+  return {
+    title: "Start with the foundations",
+    accent: 1,
+    text: P
+      ? html`Several of the basics under ${L} are not automatic yet, and that is what costs marks later. A term in a ${P} group, or a slower start at ${L}, will fix it faster than pushing on. Book a free trial lesson and we will confirm which.`
+      : html`Several of the basics are not automatic yet, and that is what costs marks later. A ${L} group rebuilds them step by step, with short homework checked every week.`,
+  };
+}
+
+const TIER_WORD = { low: "Foundations", mid: "Ready", high: "Secure" };
+
 function result(m, run) {
   const n = run.qs.length;
   const right = run.qs.reduce((a, q, k) => a + (run.picks[k] === q.answer ? 1 : 0), 0);
   const pct = n ? Math.round((right / n) * 100) : 0;
   const band = bandFor(m.bands, pct);
+  const rel = run.level ? relative(m, run, pct, band) : null;
   const byLevel = tally(run, (q) => q.level).sort((a, b) => m.levels.findIndex((l) => l.id === a.key) - m.levels.findIndex((l) => l.id === b.key));
   // Weakest subject first: that is where a group helps most.
   const byCat = tally(run, (q) => q.category).sort((a, b) => a.right / a.total - b.right / b.total || b.total - a.total);
-  const lvl = band && band.recommend;
+  const lvl = rel ? rel.level : band && band.recommend;
   const courses = visible(m.content.courses).filter((c) => c && c.id);
   const cats = run.paper === "all" ? byCat.map((t) => t.key) : [run.paper];
   let recs = lvl ? courses.filter((c) => c.level === lvl && cats.includes(c.category)) : [];
@@ -170,7 +225,14 @@ function result(m, run) {
     fallback = recs.length > 0;
   }
   const levelTotal = lvl ? courses.filter((c) => c.level === lvl).length : 0;
-  return { n, right, pct, band, byLevel, byCat, level: lvl, recs: recs.slice(0, 4), recsTotal: recs.length, levelTotal, fallback };
+  const copy = rel
+    ? relativeCopy(m, rel)
+    : {
+        title: band && band.title ? band.title : "Paper marked",
+        accent: 1,
+        text: band && band.text ? band.text : "Every group starts with a conversation about where the gaps are. Send us your score and we will suggest one.",
+      };
+  return { n, right, pct, band, rel, copy, byLevel, byCat, level: lvl, recs: recs.slice(0, 4), recsTotal: recs.length, levelTotal, fallback };
 }
 
 /* ------------------------------------------------------------------ markup: intro */
@@ -330,13 +392,19 @@ function feedback(q, k) {
 
 /* ------------------------------------------------------------------ markup: result */
 
-function scale(m, pct) {
+function scale(m, pct, rel) {
   const bands = m.bands;
+  const n = bands.length;
+  // A single-stage paper is read against that stage, so its bands are named for what they mean there.
+  const label = (b, i) =>
+    rel
+      ? TIER_WORD[i === 0 ? "low" : i === n - 1 ? "high" : "mid"]
+      : examShort(m.content, b.recommend) || levelName(m.content, b.recommend) || `${b.min}–${b.max}`;
   return html`<div class="qz-scale" style="--x:${Math.max(0, Math.min(100, pct))}%" aria-hidden="true">
     <div class="qz-scale__track">
       ${bands.map(
-        (b) => html`<span class="qz-scale__band${pct >= b.min && pct <= b.max ? " is-hit" : ""}" style="left:${Math.max(0, b.min)}%;width:${Math.max(0, Math.min(100, b.max + (b.max >= 100 ? 0 : 1)) - Math.max(0, b.min))}%">
-          <span class="qz-scale__label">${examShort(m.content, b.recommend) || levelName(m.content, b.recommend) || `${b.min}–${b.max}`}</span>
+        (b, i) => html`<span class="qz-scale__band${pct >= b.min && pct <= b.max ? " is-hit" : ""}" style="left:${Math.max(0, b.min)}%;width:${Math.max(0, Math.min(100, b.max + (b.max >= 100 ? 0 : 1)) - Math.max(0, b.min))}%">
+          <span class="qz-scale__label">${label(b, i)}</span>
         </span>`
       )}
       <span class="qz-scale__you"></span>
@@ -346,22 +414,24 @@ function scale(m, pct) {
 }
 
 function resultStage(m, run, res) {
-  const band = res.band;
-  const title = band && band.title ? band.title : "Paper marked";
-  const text = band && band.text ? band.text : "Every group starts with a conversation about where the gaps are. Send us your score and we will suggest one.";
+  const { title, text } = res.copy;
+  const rel = res.rel;
+  const nextName = rel && rel.nextPaper ? levelName(m.content, rel.next) : "";
+  // Each segment keeps its words together, so a wrap never strands one word ("Levels") on a line.
+  const seg = (t) => html`<span class="qz-res__seg">${t}</span>`;
   return html`<div class="qz-res">
-    <p class="eyebrow qz-res__eyebrow"><span class="eyebrow__num">${pad(res.n)}</span>Marked · ${paperName(m, run.paper)} · ${levelLabel(m, run.level)}</p>
+    <p class="eyebrow qz-res__eyebrow"><span class="eyebrow__num">${pad(res.n)}</span><span>${seg("Marked")} · ${seg(paperName(m, run.paper))} · ${seg(levelLabel(m, run.level))}</span></p>
     <div class="qz-res__score">
       <p class="qz-res__fig" aria-hidden="true">
         <span class="pen-mark qz-res__circle"><span class="qz-res__num">${res.right}</span>${penCircle()}</span><span class="qz-res__out">/${res.n}</span>
       </p>
       <div class="qz-res__side">
         <p class="qz-res__pct"><span class="num" data-count-suffix="%">${res.pct}%</span></p>
-        ${m.bands.length ? scale(m, res.pct) : ""}
+        ${m.bands.length > 1 || (m.bands.length && !rel) ? scale(m, res.pct, rel) : ""}
       </div>
       <p class="sr-only">You scored ${res.right} out of ${res.n}: ${res.pct} percent.</p>
     </div>
-    <h1 class="h1 qz-res__title" id="qz-h1" tabindex="-1">${accent(title, 1)}</h1>
+    <h1 class="h1 qz-res__title" id="qz-h1" tabindex="-1">${accent(title, res.copy.accent)}</h1>
     <p class="lead qz-res__text">${text}</p>
     ${res.byLevel.length > 1
       ? html`<dl class="qz-res__levels">
@@ -377,13 +447,15 @@ function resultStage(m, run, res) {
       <a class="btn btn--primary btn--lg" href="#qz-after" data-scroll-to="#qz-after" data-magnetic>
         <span>${res.recs.length ? "See the suggested groups" : "See your marked paper"}</span><span class="btn__icon">${icon("arrow-down", { size: 18 })}</span>
       </a>
-      <button class="btn btn--ghost btn--lg" type="button" data-action="retry"><span>Try again</span></button>
+      ${nextName
+        ? html`<button class="btn btn--ghost btn--lg" type="button" data-action="next-stage"><span>Try the ${nextName} paper</span><span class="btn__icon">${icon("arrow-right", { size: 18 })}</span></button>`
+        : html`<button class="btn btn--ghost btn--lg" type="button" data-action="retry"><span>Try again</span></button>`}
       <button class="qz-res__other" type="button" data-action="restart">Choose another paper</button>
     </div>
   </div>`;
 }
 
-function recRow(m, c, pct, i) {
+function recRow(m, c, run, pct, i) {
   const lv = levelName(m.content, c.level);
   const exam = examShort(m.content, c.level);
   const left = Number(c.seatsLeft);
@@ -405,7 +477,7 @@ function recRow(m, c, pct, i) {
       ${known && left <= 0 ? html`<span class="tag">Waiting list</span>` : known && left <= 3 ? html`<span class="tag tag--amber">${plural(left, "place")} left</span>` : ""}
     </div>
     <div class="qz-rec__actions">
-      <a class="btn btn--primary btn--sm" href="#/enrol?course=${id}&quiz=${pct}"><span>Enrol</span><span class="btn__icon">${icon("arrow-right", { size: 14 })}</span></a>
+      <a class="btn btn--primary btn--sm" href="#/enrol?course=${id}&quiz=${pct}${run.level ? `&quizlevel=${encodeURIComponent(run.level)}` : ""}"><span>Enrol</span><span class="btn__icon">${icon("arrow-right", { size: 14 })}</span></a>
       <a class="link-arrow link-arrow--muted" href="#/courses/${id}"><span>Course page</span></a>
     </div>
   </li>`;
@@ -413,6 +485,7 @@ function recRow(m, c, pct, i) {
 
 function afterMarkup(m, run, res) {
   const lvName = res.level ? levelName(m.content, res.level) : "";
+  const rel = res.rel;
   const showCats = res.byCat.length > 1;
   return html`<div class="container">
     ${res.recs.length
@@ -423,12 +496,16 @@ function afterMarkup(m, run, res) {
             <p class="section-head__aside small muted" data-reveal>
               ${res.fallback
                 ? `There is no ${lvName} group for ${paperName(m, run.paper)} yet, so these are the closest fits at that level.`
+                : rel && rel.level !== rel.chosen
+                ? html`One stage below the ${stage(m, rel.chosen)} paper, where the basics become automatic. Ask about a slower start at ${stage(m, rel.chosen)} in the trial lesson.`
+                : rel && rel.tier === "high" && rel.next
+                ? html`Groups for the stage you chose. ${rel.nextPaper ? html`The ${stage(m, rel.next)} paper` : "A trial lesson"} will show whether the next stage is within reach.`
                 : run.paper === "all" && res.byCat.length > 1
                 ? "Ordered by where marks were lost: the first subject is where a group will help most."
                 : "Every course page has the full topic list, the timetable and who teaches it."}
             </p>
           </div>
-          <ol class="qz-recs" data-stagger="0.08">${res.recs.map((c, i) => recRow(m, c, res.pct, i))}</ol>
+          <ol class="qz-recs" data-stagger="0.08">${res.recs.map((c, i) => recRow(m, c, run, res.pct, i))}</ol>
           ${res.levelTotal > res.recs.length
             ? html`<p class="qz-after__more" data-reveal>
                 <a class="link-arrow" href="#/courses?level=${encodeURIComponent(res.level)}"><span>All ${plural(res.levelTotal, `${lvName} course`)}</span>${icon("arrow-right", { size: 16 })}</a>
@@ -475,6 +552,20 @@ function afterMarkup(m, run, res) {
 
 /* ------------------------------------------------------------------ markup: mark scheme */
 
+/** How the same cut-offs read on a single-stage paper (see relative()). */
+function stageNote(m) {
+  const b = m.bands;
+  if (b.length < 2 || m.levelsIn(m.questions).length < 2) return "";
+  const range = (lo, hi) => html`<span class="qz-nw">${lo}–${hi}%</span>`;
+  const low = range(b[0].min, b[0].max);
+  const high = range(b[b.length - 1].min, b[b.length - 1].max);
+  const mid = b.length > 2 ? range(b[1].min, b[b.length - 2].max) : "";
+  return html`<p class="qz-scheme__note" data-reveal>
+    <span class="qz-scheme__note-k">Papers for one stage</span>
+    <span>These bands read the mixed paper. Choose a stage and the same cut-offs are read against it: ${low} means a stage lower or a slower start${mid ? html`, ${mid} is ready for that stage` : ""}, and ${high} is secure in it. The next stage’s paper is then the test of moving up.</span>
+  </p>`;
+}
+
 function schemeSection(m) {
   if (!m.bands.length) return "";
   const widths = m.bands.map((b) => Math.max(8, Math.min(100, b.max + 1) - Math.max(0, b.min)));
@@ -506,6 +597,7 @@ function schemeSection(m) {
           </li>`
         )}
       </ol>
+      ${stageNote(m)}
     </div>
   </section>`;
 }
@@ -686,7 +778,7 @@ export default {
       showAfter(res);
       markScheme(res);
       focus($("#qz-h1"));
-      say(`Paper marked: ${res.right} out of ${res.n}, ${res.pct} percent. ${res.band && res.band.title ? res.band.title : ""}`);
+      say(`Paper marked: ${res.right} out of ${res.n}, ${res.pct} percent. ${res.copy.title}.`);
       if (instant) return finish();
       add(() => {
         const fig = $(".qz-res__fig");
@@ -749,7 +841,8 @@ export default {
     }
     function markScheme(res) {
       if (!schemeEl) return;
-      const hitIndex = res && res.band ? m.bands.indexOf(res.band) : -1;
+      // A single-stage paper is not read by the mixed paper's bands, so none of them is "your band".
+      const hitIndex = res && res.band && !res.rel ? m.bands.indexOf(res.band) : -1;
       schemeEl.querySelectorAll(".qz-band").forEach((li, i) => li.classList.toggle("is-hit", i === hitIndex));
       const you = schemeEl.querySelector(".qz-ruler__you");
       if (you) {
@@ -965,6 +1058,15 @@ export default {
       markScheme(null);
       goStage("question");
     }
+    // From a secure result, the next stage's paper: the real test of whether that stage is within reach.
+    function nextStage() {
+      const r = lastRes && lastRes.rel;
+      if (busy || !run || !r || !r.nextPaper) return;
+      sel = normSel(m, r.nextPaper, r.next);
+      hideAfter();
+      markScheme(null);
+      start(sel.paper);
+    }
     function restart() {
       if (busy) return;
       if (run) sel = normSel(m, run.paper, run.level);
@@ -1020,6 +1122,7 @@ export default {
       if (act && root.contains(act)) {
         const a = act.getAttribute("data-action");
         if (a === "retry") retry();
+        else if (a === "next-stage") nextStage();
         else if (a === "restart") restart();
         return;
       }
@@ -1097,7 +1200,8 @@ export default {
 
     const snap = snapshot;
     snapshot = null;
-    if (snap && Date.now() - snap.at < SNAPSHOT_MS) {
+    // Only an in-place re-render (admin live preview) restores: the hash is unchanged then.
+    if (snap && Date.now() - snap.at < SNAPSHOT_MS && snap.hash === location.hash) {
       sel = normSel(m, snap.sel.paper, snap.sel.level);
       if (snap.run) {
         const qs = snap.run.keys.map((key) => m.questions.find((q) => q.key === key));
@@ -1122,6 +1226,7 @@ export default {
       alive = false;
       snapshot = {
         at: Date.now(),
+        hash: location.hash,
         stage,
         sel: { ...sel },
         run: run && { paper: run.paper, level: run.level, keys: run.qs.map((q) => q.key), i: run.i, picks: run.picks.slice(), marked: run.marked },

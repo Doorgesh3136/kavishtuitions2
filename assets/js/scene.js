@@ -182,7 +182,7 @@ function buildSpecs(q) {
   );
   const cone = new THREE.LatheGeometry(roundedProfile([[0, -0.56], [0.5, -0.56], [0, 0.56]], [0, 0.03, 0], q.fillet), q.radial);
 
-  return [
+  const specs = [
     { key: "sphere", tone: "red", geo: new THREE.SphereGeometry(0.5, q.sphereW, q.sphereH), r: 0.5, rest: new THREE.Quaternion(), restH: 0.5, w: 1.0 },
     { key: "cube", tone: "plaster", geo: new RoundedBoxGeometry(0.9, 0.9, 0.9, q.box, 0.075), r: 0.78, rest: new THREE.Quaternion(), restH: 0.45, w: 1.1 },
     { key: "cone", tone: "plaster", geo: cone, r: 0.62, rest: new THREE.Quaternion(), restH: 0.56, w: 1.0 },
@@ -192,6 +192,37 @@ function buildSpecs(q) {
     { key: "pyramid", tone: "plaster", geo: flatShaded(new THREE.ConeGeometry(0.62, 0.92, 4, 1)), r: 0.66, rest: new THREE.Quaternion(), restH: 0.46, w: 1.05, faceted: true },
     { key: "prism", tone: "plaster", geo: flatShaded(new THREE.CylinderGeometry(0.5, 0.5, 1.05, 3, 1)), r: 0.62, rest: qx(-Math.PI / 2).multiply(qz(Math.PI / 2)), restH: 0.25, w: 1.05, faceted: true },
   ];
+  // true extents, for keeping compositions clear of the page chrome: the farthest vertex from the
+  // centre (any orientation) and the corners of the local box (models that only turn about the vertical)
+  for (const sp of specs) {
+    const pos = sp.geo.attributes.position;
+    const v = new THREE.Vector3();
+    let reach = 0;
+    for (let i = 0; i < pos.count; i++) reach = Math.max(reach, v.fromBufferAttribute(pos, i).length());
+    sp.reach = reach;
+    sp.geo.computeBoundingBox();
+    const { min, max } = sp.geo.boundingBox;
+    sp.corners = [];
+    for (const x of [min.x, max.x]) for (const y of [min.y, max.y]) for (const z of [min.z, max.z]) sp.corners.push(new THREE.Vector3(x, y, z));
+  }
+  return specs;
+}
+
+// The cone tipped over onto its side: the turn about z that lays its slant line flat on the floor,
+// and the height its centre then rests at.
+function tippedCone(sp) {
+  const pos = sp.geo.attributes.position;
+  let apex = 0, rim = 0, base = 0;
+  for (let i = 0; i < pos.count; i++) {
+    apex = Math.max(apex, pos.getY(i));
+    base = Math.min(base, pos.getY(i));
+    rim = Math.max(rim, Math.hypot(pos.getX(i), pos.getZ(i)));
+  }
+  const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI - Math.atan2(apex - base, rim));
+  const v = new THREE.Vector3();
+  let low = 0;
+  for (let i = 0; i < pos.count; i++) low = Math.min(low, v.fromBufferAttribute(pos, i).applyQuaternion(q).y);
+  return { q, h: -low };
 }
 
 // Tileable value noise: a whisper of plaster grain (bump map).
@@ -304,6 +335,7 @@ function item(p, s, o = {}) {
     s,
     q: o.q || qE(...(o.r || [0, 0, 0])),
     upright: !!o.upright,
+    still: !!o.still, // ignores the model's accumulated idle turn: its yaw is exactly q's
     float: o.float ?? 0.1,
     ff: o.ff ?? null,
     phase: o.phase ?? null,
@@ -390,16 +422,23 @@ const LAYOUT_DEFS = {
 
   hero(L) {
     const P = L.portrait;
-    // [nx, ny, z, scale, rx, ry, rz] — a cluster with deliberate overlaps: the cube anchors,
+    // [nx, ny, z, scale, rx, ry, rz, fade] — a cluster with deliberate overlaps: the cube anchors,
     // the cone stands behind it, the torus leans in front, the red sphere floats free.
+    // Portrait: the two dark accents (sphere, icosahedron) float in the strip between the chrome and
+    // the copy, rising when the notice is dismissed; the plaster models sit lighter behind the headline.
+    // On short phones the copy (about 590px, bottom-aligned in a full-height hero) reaches up to the
+    // chrome and leaves no strip: the accents then shrink a little and dim, reading as background.
+    const hi = (ny, r) => Math.min(ny, L.ceil - r * L.u);
+    const dim = P ? 1 - smooth(30, 90, L.px - L.chrome - 590) : 0;
+    const acc = 1 - 0.12 * dim, af = 0.06 + 0.34 * dim;
     const D = P
       ? [
-          [-0.5, 0.6, 1.3, 0.48, 0, 0, 0],
-          [0.2, 0.44, 0.0, 1.08, 0.45, 0.68, 0.12],
-          [0.66, 0.62, -1.7, 0.92, 0.32, 0, -0.22],
-          [-0.62, 0.26, -0.9, 0.7, 0.9, 0.2, 1.05],
-          [0.62, 0.22, 1.0, 0.78, 0.5, -0.5, 0.25],
-          [-0.08, 0.76, -0.9, 0.56, 0.2, 0.4, 0.1],
+          [-0.58 - 0.12 * dim, hi(0.6, 0.135), 1.3, 0.44 * acc, 0, 0, 0, af],
+          [0.22, 0.3, 0.0, 0.96, 0.45, 0.68, 0.12, 0.3],
+          [0.76, hi(0.46, 0.2), -1.7, 0.82, 0.32, 0, -0.22, 0.26],
+          [-0.62, 0.2, -0.9, 0.7, 0.9, 0.2, 1.05, 0.42],
+          [0.68, 0.1, 1.0, 0.72, 0.5, -0.5, 0.25, 0.16],
+          [0.6, hi(0.74, 0.135), -0.9, 0.52 * acc, 0.2, 0.4, 0.1, af],
         ]
       : [
           [0.17, 0.34, 1.6, 0.62, 0, 0, 0],
@@ -411,8 +450,15 @@ const LAYOUT_DEFS = {
           [0.86, 0.64, -2.8, 0.86, 0.35, 0.75, 0.2],
           [0.4, -0.8, -2.4, 0.9, 0.55, 2.4, 0.5],
         ];
-    const items = D.map(([nx, ny, z, s, rx, ry, rz]) =>
-      item(L.S(nx, ny, z), s * L.u, { r: [rx, ry, rz], fade: (P ? 0.1 : 0) + smooth(-1.8, -3.2, z) * 0.16, float: 0.1, wobble: 0.06 })
+    // squarer landscape screens (tablets, 4:3 laptops): the copy column reaches further right, so the
+    // two low models nearest it step aside, clear of the call-to-action row and the hero's base rule
+    const nudge = P ? 0 : clamp((1.55 - L.aspect) * 0.6, 0, 0.18);
+    if (nudge) {
+      D[3] = [D[3][0] + nudge, D[3][1] + nudge * 0.4, ...D[3].slice(2)];
+      D[7] = [0.97, 0.02, -2.6, ...D[7].slice(3)];
+    }
+    const items = D.map(([nx, ny, z, s, rx, ry, rz, fade = 0]) =>
+      item(L.S(nx, ny, z), s * L.u, { r: [rx, ry, rz], fade: fade + smooth(-1.8, -3.2, z) * 0.16, float: 0.1, wobble: 0.06 })
     );
     return { items, wall: P ? 0.45 : 1 };
   },
@@ -475,7 +521,8 @@ const LAYOUT_DEFS = {
         fade: back * 0.3 + (P ? 0.08 : 0),
       });
     }
-    return { items, wall: P ? 0.22 : 0.3, dynamic: true, centre: c, ring: { c, R, q: tilt } };
+    // dynamic: rebuilt every frame; period: the time after which the set repeats its arrangement
+    return { items, wall: P ? 0.22 : 0.3, dynamic: true, period: (Math.PI * 2) / Math.max(1, n) / 0.07, centre: c, ring: { c, R, q: tilt } };
   },
 
   // plans: a balanced tower — cube, cylinder, torus, and the red sphere nested on top
@@ -526,7 +573,7 @@ const LAYOUT_DEFS = {
       : [
           [0.62, 0.1, -1.6, 0.5],
           [0.9, -0.66, -2.1, 0.78],
-          [0.12, 0.74, -2.3, 0.68],
+          [0.16, 0.5, -2.3, 0.62],
           [0.93, 0.44, -1.9, 0.7],
           [0.46, -0.8, -2.0, 0.72],
           [0.5, 0.62, -1.8, 0.6],
@@ -594,15 +641,32 @@ const LAYOUT_DEFS = {
     return { items, wall: 0, light: "top", floors, rules };
   },
 
-  // 404: everything drifts out of frame
-  away(L) {
+  // 404: the set has drifted out of frame, all but the cone, left behind tipped over on its side
+  // with its point toward the copy (portrait: low on the page, under the buttons)
+  away(L, specs) {
+    const P = L.portrait;
     const items = [];
     for (let i = 0; i < 8; i++) {
       const a = (i / 8) * Math.PI * 2 + 0.35;
       const p = L.S(Math.cos(a) * 1.75, Math.sin(a) * 1.8, -1 + (i % 3));
       items[i] = item(p, 0.8 * L.u, { r: [i, i * 1.7, i * 0.5], float: 0.2, wobble: 0.2, spin: 2.2 });
     }
-    return { items, wall: 0 };
+    const sp = specs[2];
+    const tip = sp.tipped || (sp.tipped = tippedCone(sp));
+    const s = (P ? 1.0 : 1.5) * L.u;
+    const a = L.S(P ? 0.36 : 0.6, P ? -0.74 : -0.36, 0);
+    items[2] = item(a.clone().add(V(0, tip.h * s, 0)), s, { q: qY(P ? -0.4 : -0.45).multiply(tip.q), upright: true, still: true, float: 0, wobble: 0, spin: 0 });
+    // the shelf it was standing on, now empty: a hairline at the floor's front edge
+    const fz = a.z + 0.5 * s;
+    const x0 = L.S(P ? -0.3 : 0.3, 0, 0.5 * s).x, x1 = L.S(P ? 0.88 : 0.92, 0, 0.5 * s).x;
+    return {
+      items,
+      wall: 0,
+      light: "top",
+      floors: [{ x: (x0 + x1) / 2, y: a.y, z: a.z - 0.5 * s, w: x1 - x0 + s, d: 2.5 * s, o: 1 }],
+      rules: [[V(x0, a.y, fz), V(x1, a.y, fz), 1]],
+      centre: a.clone(),
+    };
   },
 };
 
@@ -629,6 +693,7 @@ export async function createScene(canvas, options = {}) {
     return await build(canvas, gl, { report, reducedMotion: !!reducedMotion, adaptive, debug });
   } catch (err) {
     console.warn("[scene] 3D disabled:", err && err.message ? err.message : err);
+    try { document.querySelectorAll("[data-scene-probe]").forEach((n) => n.remove()); } catch { /* ignore */ }
     report(1);
     return makeStub(canvas, fallback);
   }
@@ -790,8 +855,27 @@ async function build(canvas, gl, { report, reducedMotion, adaptive, debug }) {
 
   /* ---------------- view geometry */
 
+  // The page's fixed chrome (announcement + header) is transparent at rest, so nothing the scene draws
+  // may sit under it. Its height is the page's --top-offset, turned into pixels by an invisible probe
+  // that follows it; a ResizeObserver on the probe re-composes the layout when the notice is dismissed
+  // or rewraps.
+  let chromePx = 0;
+  let chromeProbe = null;
+  try {
+    chromeProbe = document.createElement("div");
+    chromeProbe.setAttribute("aria-hidden", "true");
+    chromeProbe.setAttribute("data-scene-probe", "");
+    chromeProbe.style.cssText = "position:fixed;top:0;left:0;width:0;height:var(--top-offset,0px);visibility:hidden;pointer-events:none;contain:strict";
+    (document.body || document.documentElement).appendChild(chromeProbe);
+  } catch { chromeProbe = null; }
+  const readChrome = () => {
+    const h = chromeProbe && chromeProbe.isConnected ? chromeProbe.getBoundingClientRect().height : 0;
+    return Number.isFinite(h) && h > 0 ? h : 0;
+  };
+
   const basePos = V(), fwd = V(), right = V(1, 0, 0), up = V();
   let aspect = W / H, portrait = false, count = 8, unit = 1;
+  const variantKey = () => `${portrait}|${count}|${Math.round(chromePx)}`;
   const tanH = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
   const halfH = (d) => d * tanH;
   const S = (nx, ny, z = 0) => {
@@ -809,6 +893,7 @@ async function build(canvas, gl, { report, reducedMotion, adaptive, debug }) {
     up.crossVectors(right, fwd).normalize();
     const hh0 = halfH(DIST), hw0 = hh0 * aspect;
     unit = portrait ? clamp(hw0 / 1.857, 0.85, 1.3) : clamp(hw0 / (1.6 * hh0), 0.72, 1);
+    chromePx = Math.min(readChrome(), H * 0.4);
     camera.aspect = aspect;
     camera.updateProjectionMatrix();
   }
@@ -880,13 +965,112 @@ async function build(canvas, gl, { report, reducedMotion, adaptive, debug }) {
   const env = { wall: 0, wallFrom: 0, floors: [], floorsFrom: [], fadeExtra: 0, light: LIGHTS.top.clone(), lightFrom: LIGHTS.top.clone(), ring: 0 };
   let autoIntroTimer = 0;
 
-  const ctx = () => ({ aspect, portrait, count, u: unit, t: simTime, focus: focusIndex, S, halfH, right, up, fwd });
+  // ceil: the highest screen ny (+1 = the canvas's top edge) anything may reach, just under the chrome
+  const SAFE_GAP = 8; // CSS px between the chrome's lower edge and anything drawn
+  const ceilNy = () => 1 - (2 * (chromePx + SAFE_GAP)) / H;
+  // px: canvas height in CSS px; chrome: the chrome's height in CSS px
+  const ctx = (t = simTime) => ({ aspect, portrait, count, u: unit, t, focus: focusIndex, ceil: ceilNy(), px: H, chrome: chromePx, S, halfH, right, up, fwd });
   const lightFor = (t) => (t.light === "top" ? LIGHTS.top : portrait ? LIGHTS.frontPortrait : LIGHTS.front);
 
+  /* ---------------- keeping clear of the chrome
+     Layouts are authored for the full canvas. When one would reach under the chrome, it is refitted:
+     everything above the composition's lowest point is drawn down toward it (factor k) and the models
+     shrink a little with it, so a composition keeps its shape and its footing just above the copy. Only
+     if that is not enough does the whole thing step down (dy). Every layout positions through L.S and
+     sizes through L.u, so grounded groups, shelves, the grid and the orbit stay intact. */
+
+  const FIT_KMIN = 0.45;
+  const _mv = V(), _mc = V(), _mp = V();
+  const nyAt = (p) => {
+    _mv.subVectors(p, basePos);
+    return _mv.dot(up) / halfH(_mv.dot(fwd));
+  };
+  // screen extent (ny: +1 = the canvas's top edge) of what a layout draws, seen from the resting camera:
+  // model silhouettes with their float and the pulse's breath, hairline rules and the orbit path
+  // (shadows fall below and behind the models that cast them)
+  function extent(out, acc) {
+    const breath = 0.14 * unit;
+    const add = (n) => { if (n > acc.top) acc.top = n; if (n < acc.bottom) acc.bottom = n; };
+    out.items.forEach((it, i) => {
+      if (!it || it.hidden || !(it.s > 0)) return;
+      const sp = specs[i];
+      if (it.upright) {
+        // turns about the vertical only: its height is fixed, its depth swings through ±rh
+        for (const c of sp.corners) {
+          _mc.copy(c).applyQuaternion(it.q).multiplyScalar(it.s * 1.05);
+          const rh = Math.hypot(_mc.x, _mc.z), y = it.p.y + _mc.y + Math.sign(_mc.y) * breath;
+          add(nyAt(_mp.set(it.p.x, y, it.p.z - rh)));
+          add(nyAt(_mp.set(it.p.x, y, it.p.z + rh)));
+        }
+      } else {
+        const n = nyAt(it.p), r = (sp.reach * it.s * 1.05 + it.float + breath) / halfH(_mv.dot(fwd));
+        add(n + r);
+        add(n - r);
+      }
+    });
+    const hair = 3 / H; // a rule's own antialiased width, ~1.5 CSS px
+    for (const seg of out.rules || []) for (const p of [seg[0], seg[1]]) { const n = nyAt(p); add(n + hair); add(n - hair); }
+    if (out.ring) {
+      const { c, R, q } = out.ring;
+      for (let k = 0; k < 48; k++) {
+        const a = (k / 48) * Math.PI * 2;
+        add(nyAt(_mp.set(Math.cos(a), 0, Math.sin(a)).multiplyScalar(R).applyQuaternion(q).add(c)));
+      }
+    }
+    return acc;
+  }
+
+  function compose(def, f, t = simTime) {
+    const L = ctx(t);
+    if (f && (f.k < 1 || f.dy)) {
+      const { k, dy, piv } = f;
+      L.S = (nx, ny, z = 0) => S(nx, (ny > piv ? piv + (ny - piv) * k : ny) - dy, z);
+      L.u = unit * (0.4 + 0.6 * k);
+    }
+    return def(L, specs);
+  }
+
+  function solveFit(def) {
+    const ceil = ceilNy();
+    const measure = (f) => {
+      const out = compose(def, f);
+      const acc = extent(out, { top: -Infinity, bottom: Infinity });
+      // a moving layout (the orbit) is measured over a whole cycle
+      if (out.dynamic && out.period) for (let j = 1; j < 10; j++) extent(compose(def, f, simTime + (j / 10) * out.period), acc);
+      return acc;
+    };
+    const e0 = measure(null);
+    if (!(e0.top > ceil)) return null;
+    const piv = Math.min(e0.bottom, ceil - 0.2);
+    let f = { k: FIT_KMIN, dy: 0, piv };
+    let top = measure(f).top;
+    if (top > ceil) {
+      // drawing it down is not enough: the (drawn-down) composition steps down as a whole
+      for (let j = 0; j < 4 && top > ceil; j++) {
+        f = { ...f, dy: f.dy + (top - ceil) + 0.002 };
+        top = measure(f).top;
+      }
+      return f;
+    }
+    let lo = FIT_KMIN, hi = 1;
+    for (let j = 0; j < 9; j++) {
+      const k = (lo + hi) / 2;
+      if (measure({ k, dy: 0, piv }).top > ceil) hi = k;
+      else lo = k;
+    }
+    return { k: lo, dy: 0, piv };
+  }
+
+  let fit = { key: "", f: null };
   function buildTargets(name = layoutName) {
     const def = LAYOUT_DEFS[name] || LAYOUT_DEFS.hero;
+    // the loader covers the chrome; the 404 layout is authored clear of it (its models leave the frame)
+    if (name !== "loader" && name !== "away") {
+      const key = `${name}|${W}x${H}|${variantKey()}|${focusIndex}`;
+      if (fit.key !== key) fit = { key, f: solveFit(def) };
+    }
+    const out = compose(def, name !== "loader" && name !== "away" ? fit.f : null);
     const L = ctx();
-    const out = def(L, specs);
     fillHidden(out.items, 8, L);
     for (let i = 0; i < 8; i++) if (i >= count) { out.items[i].s = 0; out.items[i].hidden = true; }
     const shown = out.items.filter((it) => !it.hidden);
@@ -981,15 +1165,17 @@ async function build(canvas, gl, { report, reducedMotion, adaptive, debug }) {
     t.resolve();
   }
 
-  function startTransition(name, { duration = 1.6, ease = easeMove, stagger = 0.05, extra = 0, arc = 0.35, order = null } = {}) {
+  // redraw: the same layout re-composed for a new frame (resize, chrome change): its rules and orbit
+  // path are drawn afresh rather than snapped to the new size
+  function startTransition(name, { duration = 1.6, ease = easeMove, stagger = 0.05, extra = 0, arc = 0.35, order = null, redraw = false } = {}) {
     if (trans) { const t = trans; trans = null; clearTimeout(t.timer); t.resolve(); }
     snapshot();
     const prevName = layoutName;
     layoutName = name;
     targets = buildTargets(name);
-    if (name !== prevName) setRules(targets.rules);
+    if (name !== prevName || redraw) setRules(targets.rules);
     else refreshRules();
-    setRing(targets.ring, prevName !== name);
+    setRing(targets.ring, prevName !== name || redraw);
     const n = objects.length;
     const delays = new Float32Array(n);
     let dur = Math.max(0.05, duration);
@@ -1028,7 +1214,7 @@ async function build(canvas, gl, { report, reducedMotion, adaptive, debug }) {
       L.p.x += Math.cos(t * ff * 0.63 + ph * 1.7) * fa * 0.35;
     }
     if (T.upright) {
-      _q.setFromAxisAngle(Y, o.angle);
+      _q.setFromAxisAngle(Y, T.still ? 0 : o.angle);
       L.q.copy(T.q).premultiply(_q);
     } else {
       _q.setFromAxisAngle(o.axis, o.angle);
@@ -1045,6 +1231,11 @@ async function build(canvas, gl, { report, reducedMotion, adaptive, debug }) {
 
   const lightNow = V();
   let lastLightKey = "";
+  const scrollFrac = () => clamp((window.scrollY || 0) / (window.innerHeight || H), 0, 1.6);
+  // portrait: the copy scrolls up over the models (they drift at a third of its speed), so they recede
+  // toward the paper as it arrives. Reduced motion: no drift, but they still recede (a fade, not motion)
+  const recedeFor = (v) => (portrait ? smooth(0.03, 0.4, v) * 0.6 : 0);
+  let recede = 0;
 
   function update(dt, tNow) {
     if (!reduced) simTime += dt;
@@ -1052,8 +1243,7 @@ async function build(canvas, gl, { report, reducedMotion, adaptive, debug }) {
     if (!reduced) {
       ptr.x = damp(ptr.x, ptr.tx, 2.4, dt);
       ptr.y = damp(ptr.y, ptr.ty, 2.4, dt);
-      const vh = window.innerHeight || H;
-      scr.drift = damp(scr.drift, clamp((window.scrollY || 0) / vh, 0, 1.6), 7, dt);
+      scr.drift = damp(scr.drift, scrollFrac(), 7, dt);
       scr.p = damp(scr.p, scr.tp, 5, dt);
       scr.v = damp(scr.v, scr.tv, 4, dt);
       scr.tv = damp(scr.tv, 0, 3, dt);
@@ -1061,6 +1251,7 @@ async function build(canvas, gl, { report, reducedMotion, adaptive, debug }) {
       ptr.x = ptr.y = 0;
       scr.drift = scr.v = scr.p = 0;
     }
+    recede = recedeFor(reduced ? scrollFrac() : scr.drift);
 
     if (!targets) targets = buildTargets(layoutName);
     if (targets.dynamic) {
@@ -1144,7 +1335,7 @@ async function build(canvas, gl, { report, reducedMotion, adaptive, debug }) {
       m.position.copy(C.p);
       m.quaternion.copy(C.q);
       let s = C.s;
-      let fade = C.fade + env.fadeExtra;
+      let fade = C.fade + env.fadeExtra + recede;
 
       // loader appearance: scale in (expo-out), settle down, unwind a little. Reduced motion: appear
       // at once (the loader may be ink, so no fade through the paper colour)
@@ -1210,9 +1401,9 @@ async function build(canvas, gl, { report, reducedMotion, adaptive, debug }) {
       fm.visible = true;
       fm.position.set(f.x, f.y, f.z);
       fm.scale.set(f.w, f.d, 1);
-      fm.material.opacity = FLOOR_OPACITY * f.o * (1 - env.fadeExtra);
+      fm.material.opacity = FLOOR_OPACITY * f.o * (1 - env.fadeExtra) * (1 - recede);
     });
-    wall.material.opacity = WALL_OPACITY * env.wall * (1 - env.fadeExtra);
+    wall.material.opacity = WALL_OPACITY * env.wall * (1 - env.fadeExtra) * (1 - recede);
     wall.visible = wall.material.opacity > 0.002 && !anyFloor;
 
     // hairline rules
@@ -1228,7 +1419,7 @@ async function build(canvas, gl, { report, reducedMotion, adaptive, debug }) {
         const dk = easeMove(clamp01(bank.draw * 1.3 - k * 0.06));
         mm.visible = dk > 0.001;
         mm.scale.set(Math.max(1e-4, mm.userData.len * dk), mm.userData.thick, 1);
-        mm.material.opacity = RULE_OPACITY * bank.o * mm.userData.alpha;
+        mm.material.opacity = RULE_OPACITY * bank.o * mm.userData.alpha * (1 - recede);
       });
     }
     // orbit path
@@ -1236,7 +1427,7 @@ async function build(canvas, gl, { report, reducedMotion, adaptive, debug }) {
     if (Math.abs(ringState.o - ringState.target) > 0.003) busy = true;
     if (ringState.o > 0.003 && ring.geometry.index) {
       ring.visible = true;
-      ringMat.opacity = RULE_OPACITY * 0.9 * ringState.o;
+      ringMat.opacity = RULE_OPACITY * 0.9 * ringState.o * (1 - recede);
       const dk = reduced ? 1 : easeMove(clamp01((tNow - ringState.drawT0) / 1.6));
       if (dk < 1) busy = true;
       ring.geometry.setDrawRange(0, Math.floor((ring.geometry.index.count / 6) * dk) * 6);
@@ -1308,10 +1499,10 @@ async function build(canvas, gl, { report, reducedMotion, adaptive, debug }) {
   }
   function settleResize() {
     if (destroyed) return;
-    const variant = `${portrait}|${count}`;
+    const variant = variantKey();
     if (lastVariant && variant !== lastVariant && introDone && !reduced) {
       lastVariant = variant;
-      startTransition(layoutName, { duration: 1.1 });
+      startTransition(layoutName, { duration: 1.1, redraw: true });
     } else {
       lastVariant = variant;
       targets = buildTargets(layoutName);
@@ -1325,7 +1516,7 @@ async function build(canvas, gl, { report, reducedMotion, adaptive, debug }) {
     clearTimeout(resizeTimer);
     // follow the viewport immediately (the composition stays locked to the screen), then settle
     applySize();
-    if (`${portrait}|${count}` === lastVariant) {
+    if (variantKey() === lastVariant) {
       targets = buildTargets(layoutName);
       refreshRules();
       setRing(targets.ring, false);
@@ -1334,7 +1525,10 @@ async function build(canvas, gl, { report, reducedMotion, adaptive, debug }) {
     resizeTimer = setTimeout(settleResize, 180);
   };
   const ro = typeof ResizeObserver === "function" ? new ResizeObserver(onResize) : null;
-  if (ro) ro.observe(canvas);
+  if (ro) {
+    ro.observe(canvas);
+    if (chromeProbe) ro.observe(chromeProbe);
+  }
   window.addEventListener("resize", onResize, { passive: true });
 
   const onPointer = (e) => {
@@ -1376,7 +1570,7 @@ async function build(canvas, gl, { report, reducedMotion, adaptive, debug }) {
   /* ---------------- boot */
 
   applySize();
-  lastVariant = `${portrait}|${count}`;
+  lastVariant = variantKey();
   targets = buildTargets("loader");
   env.wall = targets.wall;
   env.floors = targets.floors;
@@ -1475,6 +1669,8 @@ async function build(canvas, gl, { report, reducedMotion, adaptive, debug }) {
       scr.tp = clamp01(+progress || 0);
       scr.tv = clamp(+velocity || 0, -80, 80);
       if (!reduced) kick();
+      else if (Math.abs(recedeFor(scrollFrac()) - recede) > 0.02) kick(); // renders on demand
+
     },
 
     setVisible(v) {
@@ -1516,6 +1712,7 @@ async function build(canvas, gl, { report, reducedMotion, adaptive, debug }) {
       clearTimeout(autoIntroTimer);
       if (trans) { clearTimeout(trans.timer); trans.resolve(); trans = null; }
       if (ro) ro.disconnect();
+      if (chromeProbe) chromeProbe.remove();
       window.removeEventListener("resize", onResize);
       window.removeEventListener("pointermove", onPointer);
       document.documentElement.removeEventListener("pointerleave", onLeave);

@@ -32,12 +32,21 @@ export const applyValue = (field, item, v) => (field.set ? field.set(item, v) : 
 
 /* ------------------------------------------------------------------ options */
 
+const isEntry = (x) => !!x && typeof x === "object" && !Array.isArray(x);
+const entries = (v) => (Array.isArray(v) ? v.filter(isEntry) : []);
+
+/** A list field's value as a list of strings: a lone string counts as one entry, blanks are dropped. */
+export const asLines = (v) =>
+  (Array.isArray(v) ? v : typeof v === "string" && v.trim() ? [v] : [])
+    .filter((x) => x != null && typeof x !== "object" && String(x).trim() !== "")
+    .map((x) => String(x));
+
 const SOURCES = {
-  levels: (c) => (c.levels || []).map((l) => ({ value: l.id, label: l.exam ? `${l.name} (${l.exam.split(" ·")[0]})` : l.name })),
-  categories: (c) => (c.categories || []).map((x) => ({ value: x.id, label: x.name })),
-  tutors: (c) => (c.tutors || []).map((t) => ({ value: t.id, label: t.name })),
+  levels: (c) => entries(c.levels).map((l) => ({ value: l.id, label: l.exam ? `${l.name} (${String(l.exam).split(" ·")[0]})` : l.name })),
+  categories: (c) => entries(c.categories).map((x) => ({ value: x.id, label: x.name })),
+  tutors: (c) => entries(c.tutors).map((t) => ({ value: t.id, label: t.name })),
   courses: (c) =>
-    (c.courses || []).map((x) => ({
+    entries(c.courses).map((x) => ({
       value: x.id,
       label: `${x.code ? `${x.code} · ` : ""}${x.title || x.id} — ${store.levelName(c, x.level)}`,
       group: store.levelName(c, x.level),
@@ -157,7 +166,7 @@ export function renderField(field, item, content) {
       break;
     }
     case "list": {
-      const list = Array.isArray(value) ? value : [];
+      const list = asLines(value);
       label = labelText(field, id);
       if (field.variant === "tags") {
         control = html`<div class="f-tags" data-tags role="group" aria-labelledby="${id}-label" ${describedBy ? raw(`aria-describedby="${describedBy}"`) : ""}>
@@ -184,7 +193,7 @@ export function renderField(field, item, content) {
     }
     case "choices": {
       const v = value || { options: [], answer: 0 };
-      const opts = Array.isArray(v.options) && v.options.length ? v.options : ["", ""];
+      const opts = Array.isArray(v.options) && v.options.length ? v.options.map((o) => (o == null || typeof o === "object" ? "" : String(o))) : ["", ""];
       const name = `${id}-correct`;
       label = labelText(field, id);
       control = html`<fieldset class="f-choices" data-choices aria-labelledby="${id}-label" ${describedBy ? raw(`aria-describedby="${describedBy}"`) : ""}>
@@ -542,6 +551,7 @@ export function bindForm(root, fields, { item = null, content = null, onField = 
     if (ch) {
       const el = fieldOf(ch);
       const list = el.querySelector(".f-choices__list");
+      let removedAnswer = false;
       if (ch.dataset.choice === "add") {
         if (list.children.length >= 6) return;
         const name = list.querySelector('input[type="radio"]')?.name || nextId("c");
@@ -553,11 +563,18 @@ export function bindForm(root, fields, { item = null, content = null, onField = 
         const wasChecked = li.querySelector('input[type="radio"]').checked;
         const next = li.nextElementSibling || li.previousElementSibling;
         li.remove();
-        if (wasChecked) list.querySelector('input[type="radio"]').checked = true;
+        // The correct answer stays on the same option (radios move with their rows). If the removed
+        // option was the correct one, nothing is ticked and the field asks for a new answer —
+        // never silently promote option A.
+        if (wasChecked) {
+          el.dataset.touched = "1";
+          removedAnswer = true;
+        }
         next.querySelector('input[type="text"]').focus();
       }
       renumberChoices(el);
       changed(el);
+      if (removedAnswer) showError(el, "You removed the correct answer. Choose the new one with the letter on the left.");
     }
   };
 

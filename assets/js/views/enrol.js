@@ -5,7 +5,7 @@
 // WhatsApp or email. A contact card and a payment note sit alongside.
 
 import { html, raw, icon, penTick } from "../ui.js";
-import { visible, byId, levelName, levelExam, formatRs, safeUrl, whatsappLink, submitEnquiry } from "../store.js";
+import { visible, byId, levelName, levelExam, formatRs, safeUrl, whatsappLink, mailtoLink, enquiryMessage, submitEnquiry, updateEnquiry } from "../store.js";
 
 const gsapRef = () => window.gsap || null;
 const flipRef = () => window.Flip || null;
@@ -59,6 +59,19 @@ function fmtWhen(iso) {
   }
 }
 
+/** How to greet the person who wrote the form: "Priya Ramdin" → "Priya", "Mrs Anjali Devi" → "Mrs Devi",
+    "A. Ramdin" → "A. Ramdin". A title or an initial on its own is never used as a first name. */
+const HONORIFIC = /^(mr|mrs|ms|miss|mx|dr|prof|mme|mlle|m|sir|madam)\.?$/i;
+function greeting(name) {
+  const parts = str(name).trim().split(/\s+/).filter(Boolean);
+  let out = parts[0] || "";
+  if (HONORIFIC.test(out)) out = parts.length > 1 ? `${out} ${parts[parts.length - 1]}` : "";
+  else if (/^\p{L}\.?$/u.test(out) && parts.length > 1) out = parts.join(" ");
+  out = out.replace(/\.+$/, "");
+  // Typed all in lower case on a phone: "priya" → "Priya".
+  return out === out.toLowerCase() ? out.replace(/(^|[\s-])(\p{L})/gu, (_, a, c) => a + c.toUpperCase()) : out;
+}
+
 function bandFor(content, pct) {
   const bands = (content.quiz && Array.isArray(content.quiz.results) ? content.quiz.results : [])
     .filter((r) => r && Number.isFinite(Number(r.min)) && Number.isFinite(Number(r.max)))
@@ -100,7 +113,10 @@ function prefillFrom(m, query) {
       out.courseIds.push(c.id);
       out.notes.push({ k: "Course", v: `${c.code ? `${c.code} ` : ""}${c.title}`, sub: levelName(m.content, c.level) });
     });
-  if (out.courseIds.length) out.level = m.courses.find((c) => c.id === out.courseIds[0]).level || "";
+  if (out.courseIds.length) {
+    out.level = m.courses.find((c) => c.id === out.courseIds[0]).level || "";
+    out.source = "course";
+  }
   const lv = get("level");
   if (!out.level && m.levels.some((l) => l.id === lv)) out.level = lv;
 
@@ -108,6 +124,7 @@ function prefillFrom(m, query) {
   if (plan) {
     out.notes.push({ k: "Plan", v: str(plan.name), sub: formatRs(plan.monthly) ? `${formatRs(plan.monthly)} a month` : "" });
     out.lines.push(`We'd like to ask about the ${str(plan.name)} plan.`);
+    out.source = "plan";
     out.meta.planId = plan.id;
   }
   const res = byId(visible(m.content.resources), get("resource"));
@@ -121,13 +138,55 @@ function prefillFrom(m, query) {
   const q = get("quiz");
   if (/^\d{1,3}$/.test(q) && Number(q) <= 100) {
     const pct = Number(q);
-    const band = bandFor(m.content, pct);
-    out.notes.push({ k: "Placement check", v: `${pct}%`, sub: band ? str(band.title) : "" });
-    out.lines.push(`Placement check score: ${pct}%${band && band.title ? ` (${str(band.title)})` : ""}.`);
+    // A paper for one stage (?quizlevel=) is read against that stage, so say which paper it was. The
+    // mixed paper's band names a level: quote it only when it agrees with the group asked about.
+    const paperLevel = m.levels.some((l) => l.id === get("quizlevel")) ? get("quizlevel") : "";
+    const band = paperLevel ? null : bandFor(m.content, pct);
+    const title = band && str(band.title) && (!out.level || !band.recommend || band.recommend === out.level) ? str(band.title) : "";
+    const paper = paperLevel ? `${levelName(m.content, paperLevel)} paper` : "";
+    out.notes.push({ k: "Placement check", v: `${pct}%`, sub: paper || title });
+    out.lines.push(`Placement check score: ${pct}%${paper ? ` on the ${paper}` : title ? ` (${title})` : ""}.`);
     out.source = "quiz";
     out.meta.quizScore = pct;
   }
   return out;
+}
+
+/* ------------------------------------------------------------------ saving a correction */
+
+const ENQUIRY_KEYS = ["name", "studentName", "phone", "email", "level", "courseIds", "mode", "message"];
+const sameEnquiry = (a, b) => ENQUIRY_KEYS.every((k) => JSON.stringify(a[k] ?? "") === JSON.stringify(b[k] ?? ""));
+
+/**
+ * "Change something" corrects the enquiry already saved: the record on this device is updated in
+ * place (same reference), the form endpoint is told it is a correction, and the WhatsApp/email
+ * hand-off carries the corrected text. Never throws for network problems.
+ */
+async function resubmit(content, prev, data) {
+  const id = prev.res && prev.res.record && prev.res.record.id;
+  const record = id ? updateEnquiry(id, { ...data, updatedAt: new Date().toISOString() }) : null;
+  if (!record) return submitEnquiry(content, data); // removed meanwhile (e.g. from the admin inbox on this device)
+  let remote = null;
+  const endpoint = content?.site?.formEndpoint;
+  if (endpoint) {
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ ...data, _subject: `${prev.res.remote ? "Corrected enquiry" : "New enquiry"} — ${data.name || "website"}` }),
+      });
+      remote = res.ok;
+    } catch {
+      remote = false;
+    }
+  }
+  const text = enquiryMessage(content, record);
+  return {
+    record,
+    remote,
+    whatsappUrl: whatsappLink(content?.site?.whatsapp, text),
+    mailtoUrl: mailtoLink(content?.site?.email, `Enquiry — ${record.name}`, text),
+  };
 }
 
 /* ------------------------------------------------------------------ markup */
@@ -352,13 +411,14 @@ function contactAside(m) {
 
 function successMarkup(m, res, data) {
   const r = res.record || {};
-  const first = str(data.name).trim().split(/\s+/)[0] || "";
+  const first = greeting(data.name);
   const ref = str(r.id).replace(/^enq-/, "").slice(-6).toUpperCase();
   const courses = (data.courseIds || []).map((id) => byId(m.content.courses, id)).filter(Boolean);
   const modeLabel = MODES.find((md) => md.value === data.mode && md.value)?.label || "Either";
   const entry = [
     ["Reference", html`<span class="num">${ref || "—"}</span>`],
     ["Received", fmtWhen(r.createdAt)],
+    r.updatedAt && ["Updated", fmtWhen(r.updatedAt)],
     ["Name", data.name],
     data.studentName && ["Student", data.studentName],
     data.phone && ["Phone", data.phone],
@@ -369,7 +429,7 @@ function successMarkup(m, res, data) {
   ].filter(Boolean);
   const hours = str(m.site.hours).trim();
   return html`<div class="en-done" tabindex="-1" aria-labelledby="en-done-title">
-    <p class="eyebrow en-done__eyebrow">Enquiry saved${ref ? html` · Ref <span class="num">${ref}</span>` : ""}</p>
+    <p class="eyebrow en-done__eyebrow">${r.updatedAt ? "Enquiry updated" : "Enquiry saved"}${ref ? html` · Ref <span class="num">${ref}</span>` : ""}</p>
     <h2 class="h1 en-done__title" id="en-done-title">Thank you${first ? html`, <em>${first}.</em>` : "."}<span class="en-done__tick">${penTick()}</span></h2>
     <p class="lead en-done__lead">${res.whatsappUrl || res.mailtoUrl
       ? "One more step: send it to us. WhatsApp opens with every answer already written out, so you only press send."
@@ -453,6 +513,8 @@ export default {
     let source = pre.source;
     let meta = { ...pre.meta };
     let done = null; // { res, data } once submitted
+    let editing = null; // the { res, data } that "Change something" is correcting
+    const written = new Set(pre.lines); // message lines the prefill wrote (cleared with it)
     let sending = false;
     let slotUnbind = null;
     const touched = new Set();
@@ -639,14 +701,6 @@ export default {
         say(`${plural(Object.keys(errs).length, "answer")} need${Object.keys(errs).length === 1 ? "s" : ""} another look.`);
         return;
       }
-      sending = true;
-      const btn = $(".en-submit__btn");
-      const label = $("[data-submit-label]");
-      if (btn) {
-        btn.setAttribute("aria-disabled", "true");
-        btn.setAttribute("aria-busy", "true");
-      }
-      if (label) label.textContent = "Saving…";
       // A single level is implied by the courses ticked.
       let level = d.level;
       if (!level && d.courseIds.length) {
@@ -665,9 +719,24 @@ export default {
         source,
         ...meta,
       };
+      // Sent again unchanged after "Change something": nothing to save or send twice.
+      if (editing && sameEnquiry(editing.data, data)) {
+        done = editing;
+        editing = null;
+        showDone(true);
+        return;
+      }
+      sending = true;
+      const btn = $(".en-submit__btn");
+      const label = $("[data-submit-label]");
+      if (btn) {
+        btn.setAttribute("aria-disabled", "true");
+        btn.setAttribute("aria-busy", "true");
+      }
+      if (label) label.textContent = "Saving…";
       let res = null;
       try {
-        res = await submitEnquiry(ctx.content, data);
+        res = editing ? await resubmit(ctx.content, editing, data) : await submitEnquiry(ctx.content, data);
       } catch (e) {
         console.warn("[enrol] could not save the enquiry", e);
       }
@@ -687,6 +756,7 @@ export default {
         return;
       }
       done = { res, data };
+      editing = null;
       showDone(true);
     }
 
@@ -754,7 +824,9 @@ export default {
       );
     }
 
-    function showForm({ keep = null, animate = true, prefill = pre } = {}) {
+    // onReady runs once the form is in the page (after the old content's fade-out, however long
+    // that frame takes), so focus never lands on a button that has just been removed.
+    function showForm({ keep = null, animate = true, prefill = pre, onReady = null } = {}) {
       done = null;
       submitted = false;
       lastSummary = "";
@@ -765,6 +837,7 @@ export default {
         () => {
           if (keep) restoreValues(keep);
           tally();
+          if (onReady) onReady();
           if (motion) {
             // The heading's line reveal and the pen marks inside come with the swap.
             const h = $(".en-form__title");
@@ -847,7 +920,13 @@ export default {
         source = "enrol";
         meta = {};
         if (ctx.setQuery) ctx.setQuery({});
-        const msg = str(d.message);
+        // The sentences the prefill wrote go with it; anything the visitor typed stays.
+        const msg = str(d.message)
+          .split("\n")
+          .filter((l) => !written.has(l.trim()))
+          .join("\n")
+          .trim();
+        written.clear();
         const keep = { ...d, level: "", courseIds: [], message: msg };
         const note = $(".en-prefill");
         const finish = () => {
@@ -859,24 +938,26 @@ export default {
         if (note && !reduced) add(() => gsap.to(note, { opacity: 0, height: 0, marginBottom: 0, paddingBlock: 0, duration: 0.45, ease: ease.inOut, onComplete: finish }));
         else finish();
       } else if (a === "edit" && done) {
+        editing = done;
         const keep = { ...done.data, modeChosen: true };
-        showForm({ keep, prefill: { ...prefillFrom(m, null), notes: [] } });
-        setTimeout(() => {
-          const f = form();
-          if (alive && f && f.elements.name) f.elements.name.focus({ preventScroll: true });
-        }, reduced ? 0 : 600);
+        showForm({ keep, prefill: { ...prefillFrom(m, null), notes: [] }, onReady: focusName });
       } else if (a === "new" && done) {
         pre = prefillFrom(m, null);
         source = "enrol";
         meta = {};
+        editing = null;
+        written.clear();
         if (ctx.setQuery) ctx.setQuery({});
-        showForm({ prefill: pre });
-        setTimeout(() => {
-          const f = form();
-          if (alive && f && f.elements.name) f.elements.name.focus({ preventScroll: true });
-        }, reduced ? 0 : 600);
+        showForm({ prefill: pre, onReady: focusName });
       }
     };
+    // The form is taller than the receipt it replaces: bring its first question into view too.
+    function focusName() {
+      const f = form();
+      if (!alive || !f) return;
+      if (slot.getBoundingClientRect().top < 0) scrollToEl(slot, -110);
+      if (f.elements.name) f.elements.name.focus({ preventScroll: true });
+    }
 
     slot.addEventListener("input", onInput);
     slot.addEventListener("change", onChange);
@@ -889,6 +970,11 @@ export default {
         const next = prefillFrom(m, query);
         if (!next.notes.length && !next.level) return;
         const d = done ? null : collect();
+        if (done) {
+          editing = null; // a fresh enquiry, not a correction of the one just sent
+          written.clear();
+        }
+        next.lines.forEach((l) => written.add(l));
         pre = next;
         source = next.source;
         meta = { ...next.meta };
@@ -910,9 +996,13 @@ export default {
 
     const snap = snapshot;
     snapshot = null;
-    if (snap && Date.now() - snap.at < SNAPSHOT_MS) {
+    // Only an in-place re-render (admin live preview) restores: the hash is unchanged then. Leaving
+    // and coming back, even quickly, starts afresh with the new query's prefill.
+    if (snap && Date.now() - snap.at < SNAPSHOT_MS && snap.hash === location.hash) {
       source = snap.source;
       meta = snap.meta;
+      editing = snap.editing || null;
+      (snap.written || []).forEach((l) => written.add(l));
       if (snap.done) {
         done = snap.done;
         showDone(false);
@@ -942,7 +1032,7 @@ export default {
 
     return () => {
       alive = false;
-      snapshot = { at: Date.now(), source, meta, done, values: done ? null : collect(), touched: [...touched], submitted };
+      snapshot = { at: Date.now(), hash: location.hash, source, meta, done, editing, written: [...written], values: done ? null : collect(), touched: [...touched], submitted };
       slot.removeEventListener("input", onInput);
       slot.removeEventListener("change", onChange);
       slot.removeEventListener("focusout", onBlur);

@@ -234,7 +234,7 @@ export function setViewingLive(on) {
 export function listEnquiries() {
   const s = local();
   const list = s ? read(s, KEYS.enquiries, []) : [];
-  return (Array.isArray(list) ? list : []).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  return (Array.isArray(list) ? list : []).filter((e) => e && typeof e === "object").sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 }
 
 export function setEnquiries(list) {
@@ -564,7 +564,7 @@ export const dayShort = (id) => DAYS.find((d) => d.id === id)?.short || id;
 export function sessionsFor(content, courseId) {
   const order = DAYS.map((d) => d.id);
   return (content.timetable || [])
-    .filter((s) => s.courseId === courseId)
+    .filter((s) => s && s.courseId === courseId)
     .sort((a, b) => order.indexOf(a.day) - order.indexOf(b.day) || String(a.start).localeCompare(String(b.start)));
 }
 

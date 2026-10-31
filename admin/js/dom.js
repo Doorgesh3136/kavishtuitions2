@@ -72,6 +72,85 @@ export function flash(node) {
   setTimeout(() => node.classList.remove("is-flash"), 1600);
 }
 
+/* ------------------------------------------------------------------ focus that survives re-renders
+   Lists re-render after a save or delete, so the button that opened a dialog is often gone when the
+   dialog closes. relocator() remembers how to find "the same" control again: the element itself,
+   then the control with the same role in the same row, then the row now at the same place in the
+   same list, then the view's title. */
+
+const OWN_ATTRS = ["data-act", "data-open", "data-edit", "data-sid", "data-sid-jump", "data-dup", "data-del", "data-enq", "data-add", "data-chip", "data-tab", "data-mode", "data-tool", "data-ov", "data-nav", "data-status"];
+const ROW_ATTRS = ["data-key", "data-id", "data-sid"];
+const LISTS = "[data-coll], [data-enq-list], [data-tt]";
+const ROWS = ".lrow, .enq-row, .tt__s";
+const ROW_MAIN = ".lrow__main, [data-open], [data-edit]";
+const cssq = (v) => (window.CSS && CSS.escape ? CSS.escape(String(v)) : String(v).replace(/["\\]/g, "\\$&"));
+const focusable = (n) => !!(n && n.isConnected && !n.disabled && !n.closest("[hidden], [inert]") && typeof n.focus === "function");
+
+const viewTitle = () => {
+  const t = document.querySelector("[data-view-host] [data-view-title]");
+  return focusable(t) ? t : null;
+};
+
+export function relocator(node) {
+  const start = node && node.nodeType === 1 && node !== document.body && node !== document.documentElement ? node : null;
+  // Nothing was focused (a deep link, or a click on plain text): come back to the page heading.
+  if (!start) return viewTitle;
+  const own = OWN_ATTRS.find((a) => start.hasAttribute(a));
+  const ownSel = own ? `[${own}="${cssq(start.getAttribute(own))}"]` : start.id ? `#${cssq(start.id)}` : null;
+  const row = start.closest(ROW_ATTRS.map((a) => `[${a}]`).join(","));
+  const rowAttr = row ? ROW_ATTRS.find((a) => row.hasAttribute(a)) : null;
+  const rowSel = row && row !== start ? `[${rowAttr}="${cssq(row.getAttribute(rowAttr))}"]` : null;
+  const list = start.closest(LISTS);
+  const lists = list ? [...document.querySelectorAll(LISTS)] : [];
+  const listAt = list ? lists.indexOf(list) : -1;
+  const rowEl = start.closest(ROWS);
+  const rowAt = list && rowEl ? [...list.querySelectorAll(ROWS)].indexOf(rowEl) : -1;
+  return () => {
+    if (focusable(start)) return start;
+    if (rowSel) {
+      const r = document.querySelector(rowSel);
+      if (r) {
+        const same = ownSel ? r.querySelector(ownSel) : null;
+        if (focusable(same)) return same;
+        const main = r.matches(ROW_MAIN) ? r : r.querySelector(ROW_MAIN);
+        if (focusable(main)) return main;
+      }
+    }
+    if (ownSel && !rowSel) {
+      const same = document.querySelector(`[data-view-host] ${ownSel}, [data-shell] ${ownSel}`);
+      if (focusable(same)) return same;
+    }
+    if (listAt >= 0) {
+      const l = document.querySelectorAll(LISTS)[listAt];
+      if (l) {
+        const rows = l.querySelectorAll(ROWS);
+        const r = rows[Math.min(Math.max(rowAt, 0), rows.length - 1)];
+        const main = r ? (r.matches(ROW_MAIN) ? r : r.querySelector(ROW_MAIN)) : null;
+        if (focusable(main)) return main;
+        const add = l.querySelector("[data-add]");
+        if (focusable(add)) return add;
+      }
+    }
+    return viewTitle();
+  };
+}
+
+/** Put focus back on `find()`'s element, unless focus already moved somewhere meaningful. */
+export function focusBack(find) {
+  const a = document.activeElement;
+  if (a && a !== document.body && a.isConnected && !a.closest("dialog:not([open])")) return;
+  const t = find && find();
+  if (t) t.focus({ preventScroll: true });
+}
+
+/** Remember the focused control across a re-render: `const restore = keepFocus(); rerender(); restore();` */
+export function keepFocus() {
+  const a = document.activeElement;
+  if (!a || a === document.body) return () => {};
+  const find = relocator(a);
+  return () => focusBack(find);
+}
+
 /* ------------------------------------------------------------------ scroll lock while dialogs are open */
 
 let lockCount = 0;
@@ -169,7 +248,7 @@ export function confirmDialog({ title, body = "", confirmLabel = "Confirm", canc
         </div>
       </form>
     </dialog>`);
-    const opener = document.activeElement;
+    const back = relocator(document.activeElement);
     document.body.append(dlg);
     lock();
     dlg.showModal();
@@ -188,7 +267,8 @@ export function confirmDialog({ title, body = "", confirmLabel = "Confirm", canc
         } catch {}
         dlg.remove();
         unlock();
-        if (opener && opener.isConnected && typeof opener.focus === "function") opener.focus({ preventScroll: true });
+        const to = back();
+        if (to) to.focus({ preventScroll: true });
         resolve(v);
       };
       if (g && !reduced()) g.to(card, { y: 10, autoAlpha: 0, duration: 0.18, ease: "power2.in", onComplete: close });
@@ -212,6 +292,13 @@ const openDrawers = [];
 export const drawerOpen = () => openDrawers.length > 0;
 export const topDrawer = () => openDrawers[openDrawers.length - 1] || null;
 
+const closedWatchers = new Set();
+/** Run `fn` each time the last open drawer has closed (used to take in edits made in another tab). */
+export function onAllDrawersClosed(fn) {
+  closedWatchers.add(fn);
+  return () => closedWatchers.delete(fn);
+}
+
 /**
  * Open a side sheet (a modal <dialog>): focus is trapped, Esc and the scrim request close.
  * openDrawer({ eyebrow, title, body, footer, side: "right"|"left", size: "md"|"lg"|"nav",
@@ -234,7 +321,7 @@ export function openDrawer({ eyebrow = "", title = "", body = "", footer = "", s
       ${footer ? html`<footer class="drawer__foot" data-drawer-foot>${footer}</footer>` : ""}
     </div>
   </dialog>`);
-  const opener = document.activeElement;
+  const back = relocator(document.activeElement);
   document.body.append(dlg);
   lock();
   dlg.showModal();
@@ -242,18 +329,20 @@ export function openDrawer({ eyebrow = "", title = "", body = "", footer = "", s
   const scrim = dlg.querySelector(".drawer__scrim");
   const g = gsap();
   if (g) {
+    // Opacity only (never autoAlpha/visibility) on anything that holds the control we focus below:
+    // a visibility:hidden element can't take focus, and the dialog would fall back to its first button.
     if (reduced()) {
-      g.fromTo([panel, scrim], { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.18 });
+      g.fromTo([panel, scrim], { opacity: 0 }, { opacity: 1, duration: 0.18, clearProps: "opacity" });
     } else {
       const from = side === "left" ? -100 : 100;
-      g.fromTo(scrim, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.4, ease: "power2.out" });
+      g.fromTo(scrim, { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" });
       g.fromTo(panel, { xPercent: from }, { xPercent: 0, duration: 0.62, ease: "expo.out" });
       const inner = panel.querySelectorAll(".drawer__heading, .drawer__body > *:not(script)");
-      g.fromTo(inner, { autoAlpha: 0, y: 12 }, { autoAlpha: 1, y: 0, duration: 0.5, ease: "power3.out", stagger: 0.03, delay: 0.12, clearProps: "transform,opacity,visibility" });
+      g.fromTo(inner, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out", stagger: 0.03, delay: 0.12, clearProps: "transform,opacity" });
     }
   }
 
-  let closing = false;
+  let closing = null; // the close() promise once closing has started
   const api = {
     dialog: dlg,
     panel,
@@ -268,7 +357,11 @@ export function openDrawer({ eyebrow = "", title = "", body = "", footer = "", s
       if (t) t.textContent = text;
     },
     async requestClose() {
-      if (closing) return false;
+      // Already on its way out (e.g. Back pressed during the close animation): that counts as closed.
+      if (closing) {
+        await closing;
+        return true;
+      }
       if (onRequestClose) {
         const ok = await onRequestClose();
         if (!ok) return false;
@@ -277,9 +370,8 @@ export function openDrawer({ eyebrow = "", title = "", body = "", footer = "", s
       return true;
     },
     close() {
-      if (closing) return Promise.resolve();
-      closing = true;
-      return new Promise((resolve) => {
+      if (closing) return closing;
+      closing = new Promise((resolve) => {
         const done = () => {
           try {
             dlg.close();
@@ -288,8 +380,18 @@ export function openDrawer({ eyebrow = "", title = "", body = "", footer = "", s
           unlock();
           const i = openDrawers.indexOf(api);
           if (i >= 0) openDrawers.splice(i, 1);
-          if (opener && opener.isConnected && typeof opener.focus === "function") opener.focus({ preventScroll: true });
+          const to = back();
+          if (to) to.focus({ preventScroll: true });
           if (onClose) onClose();
+          if (!openDrawers.length) {
+            for (const fn of [...closedWatchers]) {
+              try {
+                fn();
+              } catch (e) {
+                console.error(e);
+              }
+            }
+          }
           resolve();
         };
         if (g && !reduced()) {
@@ -299,6 +401,7 @@ export function openDrawer({ eyebrow = "", title = "", body = "", footer = "", s
           g.to([panel, scrim], { autoAlpha: 0, duration: 0.15, onComplete: done });
         } else done();
       });
+      return closing;
     },
   };
   openDrawers.push(api);

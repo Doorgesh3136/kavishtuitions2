@@ -703,6 +703,16 @@
 
 /* ------------------------------------------------------------------ result */
 
+/* "Marked · Mathematics · All levels": each part stays whole when the line wraps; so does a stage
+   name ("Grade 10–11") inside running text. */
+.view--quiz .qz-res__seg,
+.view--quiz .qz-nw {
+  white-space: nowrap;
+}
+.view--quiz .qz-res__eyebrow {
+  align-items: baseline;
+}
+
 .view--quiz .qz-res__score {
   display: flex;
   flex-wrap: wrap;
@@ -871,6 +881,10 @@
 }
 .view--quiz .qz-res__other {
   margin-left: 10px;
+}
+/* With the wider "Try the … paper" button, the text link wraps under the buttons: keep it on the column edge. */
+.view--quiz .qz-res__actions:has([data-action="next-stage"]) .qz-res__other {
+  margin-left: 0;
 }
 
 /* ------------------------------------------------------------------ after: groups + marked script */
@@ -1237,6 +1251,41 @@
 .view--quiz .qz-band.is-hit .qz-band__range {
   color: var(--accent-text);
 }
+.view--quiz .qz-scheme__note {
+  display: grid;
+  gap: 8px;
+  max-width: 68ch;
+  margin-top: clamp(32px, 4vw, 56px);
+  padding-top: 18px;
+  border-top: 1px solid var(--hair);
+  color: var(--fg-2);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+.view--quiz .qz-scheme__note-k {
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+@media (min-width: 900px) {
+  /* On the section head's grid: label under its index, text under its title. */
+  .view--quiz .qz-scheme__note {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--grid-gap);
+    max-width: none;
+  }
+  .view--quiz .qz-scheme__note-k {
+    grid-column: 1 / span 3;
+    padding-top: 0.25em;
+  }
+  .view--quiz .qz-scheme__note > span:last-child {
+    grid-column: 4 / span 7;
+    max-width: 68ch;
+  }
+}
 .view--quiz .qz-band.is-hit .qz-band__range::after {
   content: "— your band";
   margin-left: 10px;
@@ -1416,10 +1465,9 @@
   font-size: 0.75rem;
 }
 .view--enrol .en-seats__name {
-  overflow: hidden;
   font-size: 0.9375rem;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  line-height: 1.25;
+  text-wrap: balance;
 }
 .view--enrol .en-seats__left {
   font-family: var(--font-mono);
@@ -1442,6 +1490,17 @@
   }
   .view--enrol .en-seats {
     grid-column: 5 / span 3;
+  }
+}
+/* Narrow desktop columns: the count drops under the name, so names are never cut short. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .view--enrol .en-seats__list a {
+    grid-template-columns: 3.4rem minmax(0, 1fr);
+    row-gap: 3px;
+  }
+  .view--enrol .en-seats__left {
+    grid-column: 2;
+    color: var(--fg-2);
   }
 }
 /* Portrait screens: the specimen cabinet sits above; the words are on a sheet of paper that
@@ -2157,6 +2216,12 @@
   .view--enrol .en-done__actions .btn {
     flex: 1 1 100%;
     justify-content: space-between;
+  }
+  /* The label follows its leading icon (as on "Send enquiry"), with or without an arrow badge,
+     instead of being pushed to the far edge of a badge-less button. */
+  .view--enrol .en-done__actions .btn > span:not(.btn__icon) {
+    flex: 1 1 auto;
+    text-align: left;
   }
   .view--enrol .en-entry__rows > div {
     grid-template-columns: 1fr;

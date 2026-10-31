@@ -2,7 +2,7 @@
 
 import { html, raw, icon, render } from "../../../assets/js/ui.js";
 import * as store from "../../../assets/js/store.js";
-import { state, subscribe, changedSections, sectionLabel, describeChange, markPublished, replaceWorking, setPublished, flush, lastCommitted, SECTIONS } from "../state.js";
+import { state, subscribe, changedSections, sectionLabel, describeChange, markPublished, markPulled, replaceWorking, setPublished, flush, lastCommitted, SECTIONS } from "../state.js";
 import { $, $$, toast, confirmDialog, download, pickFile, fmtAgo, gsap, reduced } from "../dom.js";
 import { viewHead } from "./common.js";
 import { setGhVerified, ghVerified } from "./overview.js";
@@ -15,6 +15,9 @@ function changesTpl() {
     return html`<p class="pub-none">The live <span class="mono-code">content.json</span> couldn't be loaded, so there's nothing to compare with. You can still publish this browser's copy.</p>`;
   }
   if (!changed.length) {
+    if (state.publishedAt && state.pulled) {
+      return html`<p class="pub-none">${icon("check", { size: 18 })}<span>Nothing to publish — this browser matches GitHub (pulled ${fmtAgo(state.publishedAt)}). The live site shows it once GitHub Pages catches up.</span></p>`;
+    }
     return html`<p class="pub-none">${icon("check", { size: 18 })}<span>Nothing to publish — the live site matches this browser${state.publishedAt ? html` (published ${fmtAgo(state.publishedAt)}${state.commitUrl ? html` · <a class="link" href="${state.commitUrl}" target="_blank" rel="noopener">commit</a>` : ""})` : ""}.</span></p>`;
   }
   return html`<ol class="diff">
@@ -161,11 +164,14 @@ export default {
       btn.disabled = on;
       btn.classList.toggle("is-busy", on);
       const span = btn.querySelector("span");
-      if (span && label) {
-        if (on) {
-          btn.dataset.label = span.textContent;
-          span.textContent = label;
-        } else if (btn.dataset.label) span.textContent = btn.dataset.label;
+      if (!span) return;
+      if (on && label) {
+        btn.dataset.label = span.textContent;
+        span.textContent = label;
+      } else if (!on && btn.dataset.label) {
+        // Put the original label back ("Pulling…" → "Pull latest").
+        span.textContent = btn.dataset.label;
+        delete btn.dataset.label;
       }
     };
     const showResult = (target, tpl) => {
@@ -327,6 +333,14 @@ export default {
         busy(btn, true, "Pulling…");
         try {
           const { content } = await store.fetchFromGitHub(cfg);
+          const problems = store.validateContent(content);
+          if (problems.length) {
+            showResult(
+              result,
+              html`<div class="result result--error" role="alert"><p class="result__k">Not pulled</p><p>The <span class="mono-code">${cfg.path}</span> in ${cfg.owner}/${cfg.repo} has problems, so this browser's copy was left as it is:</p><ul class="confirm__list">${problems.slice(0, 8).map((p) => html`<li>${p}</li>`)}</ul>${problems.length > 8 ? html`<p>…and ${problems.length - 8} more.</p>` : ""}</div>`
+            );
+            return;
+          }
           const changed = changedSections() || [];
           const ok = await confirmDialog({
             eyebrow: "Pull from GitHub",
@@ -336,12 +350,21 @@ export default {
             danger: changed.length > 0,
           });
           if (ok) {
-            setPublished(content);
-            replaceWorking(content, { source: "pull" });
-            toast("Pulled the latest version from GitHub", { tone: "ok" });
+            // Does GitHub Pages already serve this file? If not (it's still deploying), the pulled copy
+            // is kept as this browser's draft until it does, so a reload doesn't lose it.
+            const served = await store.fetchPublished().catch(() => null);
+            const live = !!served && store.sameContent(store.normalizeContent(served), store.normalizeContent(content));
+            markPulled(content, { live });
+            toast("Pulled the latest version from GitHub", {
+              tone: "ok",
+              detail: live ? "The live site already shows it." : "The live site hasn't caught up yet; this browser shows the pulled version until it does.",
+            });
           }
         } catch (err) {
-          showResult(result, errorTpl("Couldn't pull from GitHub", err.message));
+          const msg = err instanceof SyntaxError
+            ? html`The <span class="mono-code">${cfg.path}</span> in ${cfg.owner}/${cfg.repo} isn't valid JSON, so this browser's copy was left as it is. Fix the file on GitHub, or publish from here to replace it.`
+            : err.message;
+          showResult(result, errorTpl("Couldn't pull from GitHub", msg));
         } finally {
           busy(btn, false);
         }
@@ -354,7 +377,7 @@ export default {
         const ok = await confirmDialog({
           eyebrow: "Discard local changes",
           title: changed.length ? `Discard ${changed.length} unpublished ${changed.length === 1 ? "section" : "sections"}?` : "Discard local changes?",
-          body: html`<p>${changed.length ? `${changed.map(sectionLabel).join(", ")} go back to ${lastCommitted() ? `the version you published ${fmtAgo(state.publishedAt)}` : "the live version"}.` : "This browser's copy goes back to the live version."} This can't be undone — download a copy first if unsure.</p>`,
+          body: html`<p>${changed.length ? `${changed.map(sectionLabel).join(", ")} go back to ${lastCommitted() ? (state.pulled ? `the version pulled from GitHub ${fmtAgo(state.publishedAt)}` : `the version you published ${fmtAgo(state.publishedAt)}`) : "the live version"}.` : "This browser's copy goes back to the live version."} This can't be undone — download a copy first if unsure.</p>`,
           confirmLabel: "Discard changes",
           danger: true,
         });

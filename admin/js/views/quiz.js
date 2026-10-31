@@ -6,7 +6,7 @@ import { state, commit, subscribe } from "../state.js";
 import { $ } from "../dom.js";
 import { renderFields, bindForm, applyValue } from "../fields.js";
 import { mountCollection } from "../collection.js";
-import { questions, results } from "../schemas.js";
+import { questions, results, entries } from "../schemas.js";
 import { viewHead, siteLink } from "./common.js";
 
 const metaFields = [
@@ -51,10 +51,13 @@ function rulerTpl(c) {
   </div>`;
 }
 
+/** The public quiz asks at most this many per run (assets/js/views/quiz.js, MAX_QUESTIONS). */
+const PER_RUN = 10;
+
 function statsTpl(c) {
-  const qs = c.quiz?.questions || [];
-  const byLevel = (c.levels || []).map((l) => ({ name: l.name, n: qs.filter((q) => q.level === l.id).length }));
-  return html`<p class="quiz-stats"><span class="num">${qs.length}</span> questions${byLevel.map((l) => html` · <span class="num">${l.n}</span> at ${l.name}`)}</p>`;
+  const qs = entries(c.quiz?.questions);
+  const byLevel = entries(c.levels).map((l) => ({ name: l.name, n: qs.filter((q) => q.level === l.id).length }));
+  return html`<p class="quiz-stats"><span class="num">${qs.length}</span> questions${byLevel.map((l) => html` · <span class="num">${l.n}</span> at ${l.name}`)}${qs.length > PER_RUN ? html` · a mixed run asks <span class="num">${PER_RUN}</span> of them` : ""}</p>`;
 }
 
 export default {
@@ -65,7 +68,7 @@ export default {
     return html`${viewHead(ctx, {
       title: "Placement check",
       italic: "check",
-      lead: "The short quiz that suggests a level. Questions are asked in this order; the score picks the result band below.",
+      lead: `The short quiz that suggests a level. Visitors pick a subject or a mixed paper; questions run level by level, easiest first, and in this order within each level. A run asks up to ${PER_RUN}, spread evenly through them. The score picks the result band below.`,
       actions: siteLink("../#/quiz", "Try the quiz"),
     })}
     <section class="block block--split" data-a-intro aria-labelledby="qz-a">

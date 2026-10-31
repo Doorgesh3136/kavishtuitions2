@@ -507,7 +507,7 @@ function sessionBlock(s, M) {
         : c.title}</span>
       <span class="pl-blk__time"><time>${s.start}</time><span class="pl-blk__end">–<time>${s.end}</time></span></span>
       ${s.room ? html`<span class="pl-blk__room">${s.room}</span>` : ""}
-      <span class="pl-blk__live" aria-hidden="true">In session</span>
+      <span class="pl-blk__live" aria-hidden="true"><span class="pl-blk__live-l">In session</span><span class="pl-blk__live-s">Now</span></span>
     </a>
   </li>`;
 }
@@ -569,7 +569,7 @@ function dayLists(M) {
         const on = d.id === sel;
         return html`<button class="pl-tab" type="button" role="tab" id="pl-tab-${d.id}" aria-controls="pl-panel-${d.id}" aria-selected="${on ? "true" : "false"}" tabindex="${on ? "0" : "-1"}" data-pl-tab="${d.id}" data-pl-day="${d.id}">
           <span class="pl-tab__d">${d.short}</span>
-          <span class="pl-tab__n" data-pl-count="${d.id}">${n}</span><span class="sr-only"> lessons</span>
+          <span class="pl-tab__n" data-pl-count="${d.id}">${n}</span><span class="sr-only" data-pl-count="${d.id}" data-fmt="unit"> ${plural(n, "lesson")}</span>
         </button>`;
       })}
     </div>
@@ -922,7 +922,8 @@ export default {
       tt.days.forEach((d) => {
         const n = d.list.filter((s) => !next || s.level.id === next).length;
         $$(`[data-pl-count="${d.id}"]`).forEach((el) => {
-          el.textContent = el.dataset.fmt === "long" ? `${n} ${plural(n, "lesson")}` : String(n);
+          const fmt = el.dataset.fmt;
+          el.textContent = fmt === "long" ? `${n} ${plural(n, "lesson")}` : fmt === "unit" ? ` ${plural(n, "lesson")}` : String(n);
         });
         const empty = $(`[data-pl-empty="${d.id}"]`);
         if (empty) empty.hidden = n > 0;
@@ -949,12 +950,13 @@ export default {
       if (!c) return "";
       const list = tt.sessions.filter((s) => s.course.id === id);
       const tutor = tutorFor(M.content, c);
+      const tutorName = tutor && tutor.visible !== false ? tutor.name : ""; // hidden tutors stay unnamed
       const left = num(c.seatsLeft);
       const lvl = list[0] ? list[0].level.name : levelName(M.content, c.level);
       const rooms = [...new Set(list.map((s) => s.room).filter(Boolean))];
       const bits = [
         lvl,
-        tutor && tutor.name,
+        tutorName,
         rooms.length === 1 ? rooms[0] : "",
         num(c.fee) !== null ? `${formatRs(c.fee)} a month` : "",
         left !== null ? (left > 0 ? `${left} ${plural(left, "seat")} left` : "Waiting list") : "",
@@ -1018,7 +1020,7 @@ export default {
         p.hidden = !sel;
         if (sel && !was && animate && !reduced) {
           const items = $$(".pl-row:not([hidden]), .pl-panel__empty:not([hidden])", p);
-          gsap.fromTo(items, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.55, ease, stagger: 0.045, overwrite: true, clearProps: "opacity,visibility,transform" });
+          gsap.fromTo(items, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.55, ease, stagger: 0.045, overwrite: true, clearProps: "opacity,transform" });
         }
       });
     }
@@ -1127,7 +1129,7 @@ export default {
         const paper = $(".pl-slip__paper", slipEl);
         const st = $(".pl-stamp", slipEl);
         gsap.set(paper, { clipPath: "inset(0% 0% 100% 0%)", yPercent: -6 });
-        if (st) gsap.set(st, { autoAlpha: 0, scale: 1.9 });
+        if (st) gsap.set(st, { opacity: 0, scale: 1.9 });
         ST.create({
           trigger: slipEl,
           start: "top 78%",
@@ -1136,31 +1138,35 @@ export default {
             const tl = gsap.timeline();
             tl.to(paper, { clipPath: "inset(0% 0% 0% 0%)", yPercent: 0, duration: 1.5, ease: easeInOut, clearProps: "clipPath,transform" });
             if (st) {
-              tl.to(st, { autoAlpha: 0.9, scale: 1, duration: 0.32, ease: "power4.in" }, 1.25);
+              tl.to(st, { opacity: 0.9, scale: 1, duration: 0.32, ease: "power4.in" }, 1.25);
               tl.fromTo(paper, { y: 0 }, { y: 3, duration: 0.07, yoyo: true, repeat: 1, ease: "power1.out", clearProps: "transform" }, 1.57);
             }
           },
         });
       }
 
-      // Timetable: hour lines rule across, then the week fills in, day by day.
+      // Timetable: hour lines rule across, then the week fills in, day by day. Lessons wait at
+      // opacity 0 (never visibility:hidden) so they stay in the tab order and the accessibility tree.
+      // The tween runs on the list item: the link's own CSS opacity transition (hover/filter dimming)
+      // would otherwise chase every frame and leave the lesson faded.
       if (gridEl) {
         const lines = $$(".pl-grid__hr", gridEl);
-        const inner = $$(".pl-blk__link", gridEl);
+        const lessons = $$(".pl-blk", gridEl);
         const band = $(".pl-grid__band", gridEl);
         gsap.set(lines, { scaleX: 0, transformOrigin: "0% 50%" });
-        gsap.set(inner, { autoAlpha: 0, y: 16 });
-        if (band) gsap.set(band, { autoAlpha: 0 });
-        ST.create({
-          trigger: gridEl,
-          start: "top 72%",
-          once: true,
-          onEnter: () => {
-            gsap.to(lines, { scaleX: 1, duration: 1.1, ease: easeInOut, stagger: 0.035, clearProps: "transform" });
-            if (band) gsap.to(band, { autoAlpha: 1, duration: 1.2, ease: "power2.out", delay: 0.3 });
-            gsap.to(inner, { autoAlpha: 1, y: 0, duration: 0.8, ease, stagger: 0.028, delay: 0.25, clearProps: "opacity,visibility,transform" });
-          },
-        });
+        gsap.set(lessons, { opacity: 0, y: 16 });
+        if (band) gsap.set(band, { opacity: 0 });
+        let played = false;
+        const play = (quick = false) => {
+          if (played) return;
+          played = true;
+          gsap.to(lines, { scaleX: 1, duration: quick ? 0.5 : 1.1, ease: easeInOut, stagger: quick ? 0 : 0.035, clearProps: "transform" });
+          if (band) gsap.to(band, { opacity: 1, duration: quick ? 0.4 : 1.2, ease: "power2.out", delay: quick ? 0 : 0.3, clearProps: "opacity" });
+          gsap.to(lessons, { opacity: 1, y: 0, duration: quick ? 0.35 : 0.8, ease, stagger: quick ? 0 : 0.028, delay: quick ? 0 : 0.25, clearProps: "opacity,transform" });
+        };
+        ST.create({ trigger: gridEl, start: "top 72%", once: true, onEnter: () => play() });
+        // Keyboard focus can reach a lesson before the scroll does: show the week straight away.
+        on(gridEl, "focusin", () => play(true));
       }
     }
 

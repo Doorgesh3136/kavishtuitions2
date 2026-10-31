@@ -33,10 +33,12 @@
 
     <script>
       // If the app never starts (very old browser, blocked script), show a plain message instead of a stuck loader.
+      // app.js clears this as soon as it runs (and removes the class if it was already added); a slow
+      // or failed content load is reported by the app's own loader instead.
       document.documentElement.classList.add("js");
       window.__ktBootTimer = setTimeout(function () {
-        document.documentElement.classList.add("boot-failed");
-      }, 15000);
+        if (!window.__ktStarted) document.documentElement.classList.add("boot-failed");
+      }, 20000);
     </script>
     <noscript><style>.loader, #scene, .site-top, .boot-error { display: none !important; }</style></noscript>
     <script nomodule>
@@ -99,7 +101,7 @@
     <div class="scene-fallback" aria-hidden="true"><img data-src="assets/img/scene-fallback.svg" alt="" decoding="async" /></div>
 
     <div class="site-top" id="site-top">
-      <div class="announce" id="announce" hidden></div>
+      <aside class="announce" id="announce" aria-label="Notice" hidden></aside>
       <header class="site-header" id="site-header"></header>
     </div>
     <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>

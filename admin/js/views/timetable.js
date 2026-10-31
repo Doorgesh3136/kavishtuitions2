@@ -5,15 +5,19 @@ import * as store from "../../../assets/js/store.js";
 import { state, subscribe } from "../state.js";
 import { $, $$, riseIn, two } from "../dom.js";
 import { openItemEditor, deleteItem, listOf } from "../collection.js";
-import { sessions as schema, toMin } from "../schemas.js";
+import { sessions as schema, toMin, entries } from "../schemas.js";
 import { viewHead, siteLink } from "./common.js";
 
 const VIEW_KEY = "kt.admin.ttView.v1";
 const fmt = (m) => `${two(Math.floor(m / 60))}:${two(m % 60)}`;
 
-/** Clashes and broken sessions. Returns { issues: [{text, ids}], bad: Set<id> } */
+/** A room both sessions can't be in at once. Online-only sessions ("Online · Zoom") don't share a room. */
+const roomKey = (r) => String(r || "").trim().replace(/\s+/g, " ").toLowerCase();
+const onlineOnly = (r) => /^(online|zoom|google meet|meet|teams)\b/.test(r);
+
+/** Clashes and broken sessions. Returns { issues: [{kind, text, ids}], bad: Set<id> } */
 export function analyse(c) {
-  const list = c.timetable || [];
+  const list = entries(c.timetable);
   const issues = [];
   const bad = new Set();
   for (const s of list) {
@@ -35,7 +39,19 @@ export function analyse(c) {
       if (!(toMin(a.start) < toMin(b.end) && toMin(b.start) < toMin(a.end))) continue;
       const ca = store.byId(c.courses, a.courseId);
       const cb = store.byId(c.courses, b.courseId);
-      if (!ca || !cb || !ca.tutorId || ca.tutorId !== cb.tutorId) continue;
+      const sameTutor = !!(ca && cb && ca.tutorId && ca.tutorId === cb.tutorId);
+      const room = roomKey(a.room);
+      if (!sameTutor && room && room === roomKey(b.room) && !onlineOnly(room)) {
+        const what = (x, s) => `${x ? `${x.title}${x.code ? ` (${x.code})` : ""}` : "a session"} ${s.start}–${s.end}`;
+        issues.push({
+          kind: "room",
+          text: `${String(a.room).trim()} is booked twice on ${store.dayName(a.day)}: ${what(ca, a)} and ${what(cb, b)}.`,
+          ids: [a.id, b.id],
+        });
+        bad.add(a.id);
+        bad.add(b.id);
+      }
+      if (!sameTutor) continue;
       const t = store.byId(c.tutors, ca.tutorId);
       issues.push({
         kind: "clash",
@@ -87,7 +103,7 @@ const levelTone = (c, course) => {
 };
 
 function gridTpl(c, analysis) {
-  const list = c.timetable || [];
+  const list = entries(c.timetable);
   const days = store.DAYS.filter((d) => d.id !== "sun" || list.some((s) => s.day === "sun"));
   let from = 8 * 60;
   let to = 21 * 60;
@@ -125,12 +141,14 @@ function gridTpl(c, analysis) {
             const tone = levelTone(c, course);
             const isBad = analysis.bad.has(s.id);
             const tutor = course ? store.byId(c.tutors, course.tutorId) : null;
-            const label = `${course ? `${course.title}${course.code ? ` ${course.code}` : ""}, ${store.levelName(c, course.level)}` : "Missing course"}, ${store.dayName(s.day)} ${s.start} to ${s.end}${s.room ? `, ${s.room}` : ""}${isBad ? ". Has a problem" : ""}. Edit`;
+            // Read after the visible text, so the button's name starts with what's on it (label in name).
+            const more = `, ${store.dayName(s.day)} ${s.start} to ${s.end}${course ? `, ${store.levelName(c, course.level)}` : ""}${s.room ? `, ${s.room}` : ""}${isBad ? ". Has a problem" : ""}. Edit`;
             return html`<button type="button" class="tt__s tt__s--${tone}${isBad ? " is-bad" : ""}${b - a < 75 ? " is-short" : ""}${count > 1 ? " is-narrow" : ""}" data-sid="${s.id}" title="${`${course ? `${course.code ? `${course.code} ` : ""}${course.title}` : "Missing course"} · ${s.start}–${s.end}${s.room ? ` · ${s.room}` : ""}`}"
-              style="${`--top:${(a - from) / span};--h:${(b - a) / span};--lane:${lane};--lanes:${count}`}" aria-label="${label}">
+              style="${`--top:${(a - from) / span};--h:${(b - a) / span};--lane:${lane};--lanes:${count}`}">
               <span class="tt__s-top"><span class="tt__s-code">${course?.code || (course ? store.levelExam(c, course.level).split(" ")[0] : "") || "—"}</span>${isBad ? html`<span class="tt__s-flag" aria-hidden="true">!</span>` : ""}</span>
               <span class="tt__s-title">${course ? course.title : "Missing course"}</span>
               <span class="tt__s-meta">${s.start}<span class="tt__s-end">–${s.end}</span>${tutor ? html`<span class="tt__s-who"> · ${tutor.name.split(" ")[0]}</span>` : ""}</span>
+              <span class="sr-only">${more}</span>
             </button>`;
           })}
         </div>`;
@@ -140,14 +158,14 @@ function gridTpl(c, analysis) {
 }
 
 function listTpl(c, analysis) {
-  const list = c.timetable || [];
+  const list = entries(c.timetable);
   const days = store.DAYS.filter((d) => list.some((s) => s.day === d.id));
   if (!list.length) return "";
   return html`<div class="tt-list">
     ${days.map((d) => {
       const items = list.filter((s) => s.day === d.id).sort((a, b) => toMin(a.start) - toMin(b.start));
       return html`<section class="tt-list__day" aria-labelledby="${`ttl-${d.id}`}">
-        <h3 class="tt-list__dayname" id="${`ttl-${d.id}`}">${d.name} <span>${items.length}</span></h3>
+        <h2 class="tt-list__dayname" id="${`ttl-${d.id}`}">${d.name} <span>${items.length}</span></h2>
         <ol class="ledger ledger--plain">
           ${items.map((s) => {
             const course = store.byId(c.courses, s.courseId);
@@ -175,7 +193,7 @@ function listTpl(c, analysis) {
 
 function tutorLoad(c) {
   const by = new Map();
-  for (const s of c.timetable || []) {
+  for (const s of entries(c.timetable)) {
     const course = store.byId(c.courses, s.courseId);
     const t = course ? store.byId(c.tutors, course.tutorId) : null;
     if (!t) continue;
@@ -187,7 +205,7 @@ function tutorLoad(c) {
 
 function bodyTpl(c, mode) {
   const analysis = analyse(c);
-  const list = c.timetable || [];
+  const list = entries(c.timetable);
   const hours = list.reduce((m, s) => m + Math.max(0, toMin(s.end) - toMin(s.start) || 0), 0) / 60;
   return html`
     <div class="tt-bar">
@@ -206,7 +224,7 @@ function bodyTpl(c, mode) {
           <ul>${analysis.issues.map((i) => html`<li><button type="button" class="issues__btn" data-sid-jump="${i.ids[0]}">${i.text}</button></li>`)}</ul>
         </div>`
       : list.length
-        ? html`<p class="ok-line">${icon("check", { size: 16 })}No clashes: no tutor is booked twice at the same time.</p>`
+        ? html`<p class="ok-line">${icon("check", { size: 16 })}No clashes: no tutor or room is booked twice at the same time.</p>`
         : ""}
     ${list.length
       ? mode === "grid"
@@ -220,10 +238,10 @@ function clashNotes(draft, c, index) {
   const tmp = { ...c, timetable: (c.timetable || []).map((s, i) => (i === index ? draft : s)) };
   if (index < 0) tmp.timetable = [...(c.timetable || []), { ...draft, id: draft.id || "__new" }];
   const id = index < 0 ? draft.id || "__new" : (c.timetable || [])[index]?.id;
-  const mine = analyse(tmp).issues.filter((i) => i.ids.includes(id) && i.kind === "clash");
+  const mine = analyse(tmp).issues.filter((i) => i.ids.includes(id) && (i.kind === "clash" || i.kind === "room"));
   const course = store.byId(c.courses, draft.courseId);
   const tutor = course ? store.byId(c.tutors, course.tutorId) : null;
-  return html`${mine.map((i) => html`<p class="note note--warn"><span class="note__k">Clash</span>${i.text}</p>`)}
+  return html`${mine.map((i) => html`<p class="note note--warn"><span class="note__k">${i.kind === "room" ? "Room" : "Clash"}</span>${i.text}</p>`)}
     ${course ? html`<p class="note"><span class="note__k">Course</span>${store.levelName(c, course.level)} · ${tutor ? `taught by ${tutor.name}` : "no tutor set"} · ${course.seatsLeft} of ${course.seats} places left</p>` : ""}`;
 }
 
@@ -249,10 +267,10 @@ export default {
     const draw = () => render(host, bodyTpl(state.working, mode));
     draw();
 
-    const indexOf = (id) => listOf(schema).findIndex((s) => s.id === id);
+    const indexOf = (id) => listOf(schema).findIndex((s) => s && s.id === id);
     const edit = (id) => {
       const i = indexOf(id);
-      if (i < 0) return;
+      if (i < 0) return ctx.replaceRoute("timetable"); // e.g. a link to a session deleted since
       openItemEditor(sessionSchema, {
         index: i,
         onOpen: () => ctx.replaceRoute(`timetable/${encodeURIComponent(id)}`),
@@ -304,7 +322,7 @@ export default {
       }
       const dup = e.target.closest("[data-dup]");
       if (dup) {
-        const src = listOf(schema).find((x) => x.id === dup.dataset.dup);
+        const src = listOf(schema).find((x) => x && x.id === dup.dataset.dup);
         if (src) add({ ...store.deepClone(src), id: "" });
         return;
       }

@@ -12,6 +12,15 @@ const ST = window.ScrollTrigger || null;
 const reduced = motion.reduced;
 const finePointer = !!(window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches);
 const docEl = document.documentElement;
+
+// The inline watchdog in index.html means "the app never started" (old browser, blocked script).
+// This module is running, so stand it down — and take back an overlay it may already have shown
+// while a slow connection was still delivering the scripts. Slow or failed content goes through
+// bootError() from here on.
+window.__ktStarted = true;
+window.clearTimeout(window.__ktBootTimer);
+docEl.classList.remove("boot-failed");
+
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -131,6 +140,20 @@ const scene = {
   get ready() {
     return state.scene !== STUB_SCENE;
   },
+  /** Model keys in index order (for focus(index)); empty until the scene attaches. */
+  get names() {
+    return Array.isArray(state.scene.names) ? state.scene.names.slice() : [];
+  },
+  /** How many models are on stage (fewer on small screens). */
+  get count() {
+    return Number(state.scene.count) || 0;
+  },
+  get layouts() {
+    return Array.isArray(state.scene.layouts) ? state.scene.layouts.slice() : [];
+  },
+  get layout() {
+    return typeof state.scene.layout === "string" ? state.scene.layout : sceneLayout;
+  },
 };
 for (const name of ["setLoadProgress", "intro", "setLayout", "setScroll", "setVisible", "pulse", "focus", "resize", "destroy"]) {
   scene[name] = (...args) => {
@@ -176,9 +199,13 @@ function layoutFor(view, ctx) {
   }
 }
 
+// The scene renders only while the view hero is on screen, the tab is visible and the
+// full-screen menu isn't covering it.
+const sceneShouldRender = () => state.heroVisible && !document.hidden && !state.menuOpen;
+
 function setSceneVisible(v) {
   state.heroVisible = v;
-  scene.setVisible(v && !document.hidden);
+  scene.setVisible(sceneShouldRender());
 }
 
 function observeHero(root) {
@@ -197,7 +224,7 @@ function observeHero(root) {
   state.heroIO.observe(hero);
 }
 
-document.addEventListener("visibilitychange", () => scene.setVisible(state.heroVisible && !document.hidden));
+document.addEventListener("visibilitychange", () => scene.setVisible(sceneShouldRender()));
 
 /* ------------------------------------------------------------------ scrolling */
 
@@ -330,9 +357,15 @@ function brand() {
   return { name, word, rest };
 }
 
+// motion.bind() cleanups for the chrome, which re-renders on every live-preview edit.
+let headerUnbind = null;
+let footerUnbind = null;
+
 function renderHeader() {
   const b = brand();
   const nav = NAV_KEYS.map((k) => routeByKey(k));
+  if (headerUnbind) safe(headerUnbind, "header unbind");
+  headerUnbind = null;
   render(
     els.header,
     html`<div class="site-header__inner">
@@ -362,7 +395,7 @@ function renderHeader() {
     </div>`
   );
   $(".menu-toggle", els.header).addEventListener("click", () => toggleMenu(true));
-  if (!reduced && finePointer) motion.bind(els.header);
+  if (!reduced && finePointer) headerUnbind = motion.bind(els.header);
   markActive();
 }
 
@@ -443,12 +476,16 @@ function toggleMenu(open, { instant = false } = {}) {
     inertTargets.forEach((n) => (n.inert = true));
     const links = $$(".menu__label, .menu__idx", els.menu);
     const foot = $(".menu__foot", els.menu);
+    // The opaque menu covers the whole canvas: stop rendering the scene once it does.
+    const hideScene = () => state.menuOpen && scene.setVisible(false);
     if (reduced || !gsap || instant) {
       if (gsap) gsap.set([els.menu, ...links, foot], { clearProps: "all" });
+      hideScene();
     } else {
       menuTween = gsap
         .timeline()
         .fromTo(els.menu, { clipPath: "inset(0% 0% 100% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 0.75, ease: motion.ease.inOut })
+        .call(hideScene, [], 0.75)
         .fromTo(links, { yPercent: 110 }, { yPercent: 0, duration: 0.9, ease: motion.ease.out, stagger: 0.035 }, 0.3)
         .fromTo(foot, { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.7, ease: motion.ease.out }, 0.55);
     }
@@ -462,6 +499,7 @@ function toggleMenu(open, { instant = false } = {}) {
     };
     inertTargets.forEach((n) => (n.inert = false));
     lockScroll(false);
+    scene.setVisible(sceneShouldRender()); // live again before the wipe uncovers it
     if (reduced || !gsap || instant) done();
     else menuTween = gsap.to(els.menu, { clipPath: "inset(0% 0% 100% 0%)", duration: 0.55, ease: motion.ease.inOut, onComplete: done });
     const back = menuReturnFocus && menuReturnFocus.isConnected ? menuReturnFocus : toggle;
@@ -571,6 +609,8 @@ function renderFooter() {
   const levels = (c.levels || []).filter((l) => l && l.id);
   const year = new Date().getFullYear();
 
+  if (footerUnbind) safe(footerUnbind, "footer unbind");
+  footerUnbind = null;
   render(
     els.footer,
     html`<div class="footer__inner">
@@ -651,17 +691,66 @@ function renderFooter() {
     const first = $(".wordmark", els.header);
     if (first) setTimeout(() => first.focus({ preventScroll: true }), reduced ? 0 : 900);
   });
-  if (!reduced && finePointer) motion.bind(els.footer);
+  if (!reduced && finePointer) footerUnbind = motion.bind(els.footer);
   markActive();
+}
+
+// The footer's "Before you enrol" sign is the closing call to action for pages that don't end on
+// one. It stands aside on the enrol page itself and after a view whose last section already asks
+// the visitor to enrol, so two near-identical CTA bands never stack. A view can also decide
+// explicitly with data-footer-cta="on" | "off" on its root.
+function syncFooterCta(root, info) {
+  if (!els.footer) return;
+  const pref = root && root.getAttribute ? root.getAttribute("data-footer-cta") : null;
+  let on = true;
+  if (pref === "on" || pref === "off") on = pref === "on";
+  else if (info && info.id === "enrol") on = false;
+  else {
+    const last = root && root.lastElementChild;
+    on = !(last && last.querySelector('a[href^="#/enrol"]'));
+  }
+  els.footer.dataset.cta = on ? "on" : "off";
 }
 
 /* ------------------------------------------------------------------ chrome: draft banner */
 
+const PUBLISH_KEY = "kt.admin.lastPublish.v1"; // written by the admin after a successful Publish
+const PAGES_WINDOW = 20 * 60e3;
+
+/**
+ * True when the draft being previewed is exactly what this browser just published.
+ * store.publishContent() stamps meta.updatedAt and saves the committed copy as the draft, so the
+ * site keeps "previewing" it until GitHub Pages serves the new data/content.json. Those edits are
+ * published, not unpublished — the live file just lags a minute or two behind.
+ */
+function justPublished(draft) {
+  const at = Date.parse((draft && draft.meta && draft.meta.updatedAt) || "");
+  if (!Number.isFinite(at) || Date.now() - at > PAGES_WINDOW) return false;
+  const liveAt = Date.parse((state.published && state.published.meta && state.published.meta.updatedAt) || "");
+  if (Number.isFinite(liveAt) && liveAt >= at) return false;
+  try {
+    const rec = JSON.parse(localStorage.getItem(PUBLISH_KEY) || "null");
+    if (rec && rec.content) return store.sameContent(store.normalizeContent(rec.content), store.normalizeContent(draft));
+  } catch {}
+  // No admin record: the draft is the committed copy if nobody has saved over it since.
+  const saved = Date.parse((store.getDraftInfo() || {}).savedAt || "");
+  return Number.isFinite(saved) && saved - at < 60e3;
+}
+
 function renderDraftBanner() {
   if (!els.draft) return;
-  const hasDraft = !!store.getDraft();
+  const draft = store.getDraft();
+  const hasDraft = !!draft;
   const live = store.isViewingLive();
-  if (state.source === "draft") {
+  if (state.source === "draft" && justPublished(draft)) {
+    render(
+      els.draft,
+      html`<span class="draft-banner__dot draft-banner__dot--live" aria-hidden="true"></span>
+        <span class="draft-banner__text">Published — the live site updates in a minute or two</span>
+        <span class="draft-banner__sep" aria-hidden="true">·</span>
+        <button class="draft-banner__link" type="button" data-draft="live">View live site</button>`
+    );
+  } else if (state.source === "draft") {
     render(
       els.draft,
       html`<span class="draft-banner__dot" aria-hidden="true"></span>
@@ -892,6 +981,7 @@ function mountView(view, info, { intro = true } = {}) {
   m.unbind = safe(() => motion.bind(root, { intro }), "motion.bind");
   state.mounted = m;
   state.current = info;
+  syncFooterCta(root, info);
   watchImages(root);
   observeHero(root);
   return m;
@@ -1029,10 +1119,20 @@ async function go(info) {
   } finally {
     state.busy = false;
   }
+  // A live-preview edit that arrived mid-transition was held back (see reloadContent).
+  const pending = rerenderPending;
+  rerenderPending = false;
   if (state.queued) {
     state.queued = false;
     const latest = parseHash();
-    if (!(state.current && sameRoute(latest, state.current) && latest.query.toString() === state.current.query.toString())) go(latest);
+    if (!(state.current && sameRoute(latest, state.current) && latest.query.toString() === state.current.query.toString())) {
+      go(latest); // mounts from the fresh state.content, so the held edit needs no extra pass
+      return;
+    }
+  }
+  if (pending) {
+    rerenderInPlace();
+    announce("Preview updated");
   }
 }
 
@@ -1286,6 +1386,8 @@ function onDocumentClick(e) {
 
 const MIN_LOAD = reduced ? 400 : 1400;
 const MAX_LOAD = 6000;
+const SLOW_HINT = 12000;
+const CONTENT_TIMEOUT = 45000;
 
 function cachedBrand() {
   try {
@@ -1333,19 +1435,22 @@ function runLoader() {
   let finished = false;
   let resolveDone;
   const done = new Promise((r) => (resolveDone = r));
-  const target = () => (forced ? 1 : Object.keys(W).reduce((s, k) => s + W[k] * Math.min(1, parts[k]), 0));
+  // After MAX_LOAD the loader stops waiting for the 3D scene, fonts and view, but never claims 100
+  // before the content (timetable, fees) has actually arrived.
+  const target = () => Object.keys(W).reduce((s, k) => s + W[k] * Math.min(1, forced && k !== "content" ? 1 : parts[k]), 0);
   const maxTimer = setTimeout(() => (forced = true), MAX_LOAD);
 
   let lastText = "";
   let prev = start;
-  const frame = (now) => {
+  let raf = 0;
+  const frame = (now, stalled = false) => {
     if (finished) return;
     const dt = Math.min(100, Math.max(0, now - prev));
     prev = now;
     const t = Math.min(1, (now - start) / MIN_LOAD);
     const cap = 0.5 - Math.cos(Math.PI * t) / 2; // eased minimum duration
     const goal = Math.min(target(), cap);
-    if (reduced) shown = goal;
+    if (reduced || stalled) shown = goal;
     else {
       const k = 1 - Math.pow(1 - 0.1, dt / 16.67);
       shown = Math.min(goal, shown + Math.max((goal - shown) * k, (0.35 * dt) / 1000));
@@ -1362,13 +1467,27 @@ function runLoader() {
     if (shown >= 0.999 && target() >= 0.999) {
       finished = true;
       clearTimeout(maxTimer);
+      clearInterval(stallTimer);
+      cancelAnimationFrame(raf);
       numEl.textContent = "100";
       resolveDone();
       return;
     }
-    requestAnimationFrame(frame);
+    if (!raf) raf = requestAnimationFrame(onFrame);
   };
-  requestAnimationFrame(frame);
+  const onFrame = (now) => {
+    raf = 0;
+    frame(now);
+  };
+  // Browsers pause requestAnimationFrame in background tabs. A tab opened in the background
+  // must still finish booting, so a slow timer takes over whenever frames stop arriving
+  // (at once when the tab is hidden; after a long stall otherwise, so a busy frame or two
+  // never makes the counter jump).
+  const stallTimer = setInterval(() => {
+    const now = performance.now();
+    if (now - prev > (document.hidden ? 200 : 1000)) frame(now, true);
+  }, 250);
+  raf = requestAnimationFrame(onFrame);
   return {
     set(k, v) {
       parts[k] = Math.max(parts[k], v);
@@ -1427,6 +1546,8 @@ async function exitLoader(root) {
 
 function bootError(message) {
   window.clearTimeout(window.__ktBootTimer);
+  // html.boot-failed hides the loader, and with it this box and its "Try again" button.
+  docEl.classList.remove("boot-failed");
   const box = $(".loader__error", els.loader);
   if (!box) return;
   render(
@@ -1468,17 +1589,29 @@ async function boot() {
     window.KT.sceneApi = api;
     if (!api.supported) showSceneFallback();
     if (sceneAttached) sceneIntro();
-    scene.setVisible(state.heroVisible && !document.hidden);
+    scene.setVisible(sceneShouldRender());
   });
 
+  // A very slow connection keeps the loader up: say so after a while, and offer a retry
+  // (instead of an endless loader) if the content never arrives.
+  const hint = $(".loader__hint", els.loader);
+  const slowTimer = setTimeout(() => {
+    if (hint) hint.textContent = "Still loading — the connection is slow.";
+  }, SLOW_HINT);
+  let giveUpTimer = 0;
+  const giveUp = new Promise((resolve, reject) => {
+    giveUpTimer = setTimeout(() => reject(new Error("The connection is too slow to load the timetable and fees right now. Check it and try again.")), CONTENT_TIMEOUT);
+  });
   let content;
   try {
-    const res = await store.loadContent();
-    content = res;
+    content = await Promise.race([store.loadContent(), giveUp]);
   } catch (e) {
     console.error("[kt] content failed to load", e);
     bootError(e && e.message ? e.message : "Check that data/content.json exists and is valid JSON.");
     return;
+  } finally {
+    clearTimeout(slowTimer);
+    clearTimeout(giveUpTimer);
   }
   state.content = content.content;
   state.published = content.published;
@@ -1504,6 +1637,7 @@ async function boot() {
   motion.refresh();
   state.booted = true;
   window.clearTimeout(window.__ktBootTimer);
+  docEl.classList.remove("boot-failed");
   docEl.classList.add("is-booted");
 
   state.busy = true;
@@ -1516,6 +1650,7 @@ async function boot() {
   if (rerenderPending) {
     rerenderPending = false;
     rerenderInPlace();
+    announce("Preview updated");
   }
   // The visitor may have used back/forward while the loader was showing.
   const latest = parseHash();

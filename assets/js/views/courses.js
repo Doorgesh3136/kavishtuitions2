@@ -111,7 +111,7 @@ function catalogue(content) {
             levelExam(content, c.level),
             categoryName(content, c.category),
             modeLabel(c.mode),
-            tutor && tutor.name,
+            tutor && tutor.visible !== false ? tutor.name : "", // a hidden tutor isn't searchable by name
             ...(Array.isArray(c.topics) ? c.topics : []),
           ]
             .filter(Boolean)
@@ -773,17 +773,19 @@ function mountList(root, ctx) {
   if (empty) park(empty);
   cells.forEach((cell) => cell.style.display === "none" && park(cell));
 
-  /* ---- card reveal: each row of cards lands like a sheet of paper ---- */
+  /* ---- card reveal: each row of cards lands like a sheet of paper ----
+     Cards wait at opacity 0 (never visibility:hidden), so they stay in the tab order and the
+     accessibility tree; keyboard focus arriving before the scroll shows them all at once. */
   const inners = cells.map((c) => c.querySelector(".cx-cell__in")).filter(Boolean);
   let revealed = reduced || !gsap || !ST || !inners.length;
   let batch = [];
   if (!revealed) {
-    gsap.set(inners, { autoAlpha: 0, y: 46, rotationX: -12, transformPerspective: 1100, transformOrigin: "50% 0%" });
+    gsap.set(inners, { opacity: 0, y: 46, rotationX: -12, transformPerspective: 1100, transformOrigin: "50% 0%" });
     batch = ST.batch(inners, {
       start: "top 92%",
       once: true,
       onEnter: (els) =>
-        gsap.to(els, { autoAlpha: 1, y: 0, rotationX: 0, duration: 1, ease, stagger: 0.085, overwrite: true, clearProps: "transform" }),
+        gsap.to(els, { opacity: 1, y: 0, rotationX: 0, duration: 1, ease, stagger: 0.085, overwrite: true, clearProps: "transform,opacity" }),
     });
   }
   const revealAll = () => {
@@ -791,8 +793,9 @@ function mountList(root, ctx) {
     revealed = true;
     batch.forEach((t) => t.kill());
     const rest = inners.filter((el) => Number(gsap.getProperty(el, "opacity")) < 1);
-    if (rest.length) gsap.to(rest, { autoAlpha: 1, y: 0, rotationX: 0, duration: 0.5, ease, overwrite: true, clearProps: "transform" });
+    if (rest.length) gsap.to(rest, { opacity: 1, y: 0, rotationX: 0, duration: 0.5, ease, overwrite: true, clearProps: "transform,opacity" });
   };
+  on(grid, "focusin", revealAll);
 
   /* ---- layout changes ---- */
   let refreshT = 0;
@@ -811,7 +814,7 @@ function mountList(root, ctx) {
     if (!animate || reduced || !gsap || !Flip) {
       settle();
       change();
-      if (gsap && animate) gsap.fromTo(grid, { autoAlpha: 0.3 }, { autoAlpha: 1, duration: 0.18, ease: "power1.out", clearProps: "opacity,visibility" });
+      if (gsap && animate) gsap.fromTo(grid, { opacity: 0.3 }, { opacity: 1, duration: 0.18, ease: "power1.out", clearProps: "opacity" });
       queueRefresh();
       return;
     }
@@ -828,13 +831,13 @@ function mountList(root, ctx) {
       onEnter: (els) => {
         enterTw = gsap.fromTo(
           els,
-          { autoAlpha: 0, y: 44, rotationX: -14, transformPerspective: 1100, transformOrigin: "50% 0%" },
-          { autoAlpha: 1, y: 0, rotationX: 0, duration: 0.85, delay: 0.16, stagger: Math.min(0.045, 0.32 / els.length), ease, overwrite: true, clearProps: "transform" }
+          { opacity: 0, y: 44, scale: 1, rotationX: -14, transformPerspective: 1100, transformOrigin: "50% 0%" },
+          { opacity: 1, y: 0, rotationX: 0, duration: 0.85, delay: 0.16, stagger: Math.min(0.045, 0.32 / els.length), ease, overwrite: true, clearProps: "transform,opacity" }
         );
         return enterTw;
       },
       onLeave: (els) => {
-        leaveTw = gsap.to(els, { autoAlpha: 0, scale: 0.94, duration: 0.3, ease: "power2.in", overwrite: true });
+        leaveTw = gsap.to(els, { opacity: 0, scale: 0.94, duration: 0.3, ease: "power2.in", overwrite: true });
         return leaveTw;
       },
       onComplete: queueRefresh,
@@ -933,7 +936,7 @@ function mountList(root, ctx) {
     if (empty && !empty.hidden && !wasEmpty) {
       if (empty.querySelector("[data-cx-draw]")) unpark(empty, 0.35);
       else if (!reduced && motion.draw) motion.draw(empty, { delay: 0.35 });
-      if (gsap && !reduced) gsap.fromTo(empty, { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: 0.7, delay: 0.2, ease, clearProps: "transform" });
+      if (gsap && !reduced) gsap.fromTo(empty, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7, delay: 0.2, ease, clearProps: "transform,opacity" });
     }
 
     if (scroll) scrollToList();
@@ -1073,13 +1076,14 @@ function mountDetail(root, ctx, c) {
         p.setAttribute("data-cx-draw", "");
       })
     );
-    gsap.set(rows, { autoAlpha: 0, y: 22 });
-    gsap.set(ticks, { autoAlpha: 0 });
+    // Opacity only (not visibility), so screen readers get the whole syllabus before it's scrolled to.
+    gsap.set(rows, { opacity: 0, y: 22 });
+    gsap.set(ticks, { opacity: 0 });
     ST.batch(rows, {
       start: "top 88%",
       once: true,
       onEnter: (els) => {
-        gsap.to(els, { autoAlpha: 1, y: 0, duration: 0.9, ease, stagger: 0.07, overwrite: true, clearProps: "transform" });
+        gsap.to(els, { opacity: 1, y: 0, duration: 0.9, ease, stagger: 0.07, overwrite: true, clearProps: "transform,opacity" });
         els.forEach((row, i) => {
           const tick = row.querySelector(".cx-syl__tick");
           gsap.delayedCall(0.35 + i * 0.11, () => {
@@ -1088,7 +1092,7 @@ function mountDetail(root, ctx, c) {
               p.removeAttribute("data-cx-draw");
               p.setAttribute("data-draw", "");
             });
-            gsap.set(tick, { autoAlpha: 1 });
+            gsap.set(tick, { clearProps: "opacity" });
             if (motion.draw) motion.draw(tick, { duration: 0.45, ease: "power2.out" });
           });
         });

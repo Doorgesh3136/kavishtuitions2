@@ -6,11 +6,19 @@ import { state } from "../state.js";
 import { $, $$, toast, confirmDialog, openDrawer, fmtDate, fmtAgo, download, debounce, flash } from "../dom.js";
 import { renderFields, bindForm, focusFirstError } from "../fields.js";
 import { enquiryFields, modeLabel } from "../schemas.js";
-import { viewHead } from "./common.js";
+import { viewHead, ownerName } from "./common.js";
 
 const STATUSES = store.ENQUIRY_STATUSES;
 const LABEL = { new: "New", contacted: "Contacted", enrolled: "Enrolled", archived: "Archived" };
-const SOURCE = { enrol: "Website form", demo: "Demo data", manual: "Added by hand", quiz: "Placement check", resource: "Resource request" };
+const SOURCE = {
+  enrol: "Website form",
+  demo: "Demo data",
+  manual: "Added by hand",
+  quiz: "Placement check",
+  resource: "Resource request",
+  plan: "Plan enquiry",
+  course: "Course page",
+};
 
 const firstName = (n) => String(n || "").trim().split(/\s+/)[0] || "";
 
@@ -26,8 +34,18 @@ function courseList(c, e) {
   return (e.courseIds || []).map((id) => store.byId(c.courses, id) || { id, title: id, code: "", missing: true });
 }
 
+/** What the enquiry form carried along: the plan, resource and placement score it came from. */
+function extras(c, e) {
+  const plan = e.planId ? store.byId(c.plans, e.planId)?.name || e.planId : "";
+  const resource = e.resourceId ? store.byId(c.resources, e.resourceId)?.title || e.resourceId : "";
+  const raw = e.quizScore;
+  const score = raw !== undefined && raw !== null && raw !== "" && Number.isFinite(Number(raw)) ? `${Math.round(Number(raw))}%` : "";
+  return { plan, resource, score };
+}
+
 function replyText(c, e) {
-  const owner = firstName(c.tutors?.[0]?.name) || "";
+  // Signed by the site (or its owner), never by whoever happens to be first in the tutors list.
+  const owner = ownerName(c);
   const site = c.site?.name || "";
   const courses = courseList(c, e).filter((x) => !x.missing).map((x) => `${x.title}${x.code ? ` (${x.code})` : ""}`);
   const about = courses.length ? (courses.length > 1 ? `${courses.slice(0, -1).join(", ")} and ${courses[courses.length - 1]}` : courses[0]) : "lessons";
@@ -145,28 +163,38 @@ function addDemo() {
 }
 
 const csvCell = (v) => {
-  const s = String(v ?? "");
+  let s = String(v ?? "");
+  // Anything typed into the public form ends up here. A cell starting with = + - @ (or a tab / CR) is
+  // run as a formula by Excel and Sheets, so keep it as text (this also stops "+230 …" turning into an error).
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
 function exportCsv(list) {
   const c = state.working;
-  const head = ["Received", "Status", "Name", "Student", "Phone", "Email", "Level", "Courses", "Format", "Message", "Notes", "Source", "ID"];
-  const rows = list.map((e) => [
-    new Date(e.createdAt).toISOString().replace("T", " ").slice(0, 16),
-    LABEL[e.status] || e.status,
-    e.name,
-    e.studentName || "",
-    e.phone,
-    e.email,
-    store.levelName(c, e.level),
-    courseList(c, e).map((x) => `${x.code ? `${x.code} ` : ""}${x.title}`).join("; "),
-    modeLabel(e.mode),
-    e.message,
-    e.notes,
-    SOURCE[e.source] || e.source || "",
-    e.id,
-  ]);
+  const head = ["Received", "Status", "Name", "Student", "Phone", "Email", "Level", "Courses", "Format", "Plan", "Resource", "Placement score", "Message", "Notes", "Source", "ID"];
+  const rows = list.map((e) => {
+    const ex = extras(c, e);
+    const at = new Date(e.createdAt);
+    return [
+      Number.isNaN(at.getTime()) ? "" : at.toISOString().replace("T", " ").slice(0, 16),
+      LABEL[e.status] || e.status,
+      e.name,
+      e.studentName || "",
+      e.phone,
+      e.email,
+      store.levelName(c, e.level),
+      courseList(c, e).map((x) => `${x.code ? `${x.code} ` : ""}${x.title}`).join("; "),
+      modeLabel(e.mode),
+      ex.plan,
+      ex.resource,
+      ex.score,
+      e.message,
+      e.notes,
+      SOURCE[e.source] || e.source || "",
+      e.id,
+    ];
+  });
   const csv = `﻿${[head, ...rows].map((r) => r.map(csvCell).join(",")).join("\r\n")}\r\n`;
   download(`enquiries-${new Date().toISOString().slice(0, 10)}.csv`, csv, "text/csv");
 }
@@ -183,6 +211,7 @@ function openDetail(id, ctx, { onClose } = {}) {
   const wa = e.phone ? store.whatsappLink(waNumber(e.phone), replyText(c, e)) : null;
   const mail = e.email ? store.mailtoLink(e.email, `Your enquiry — ${c.site?.name || "tuition"}`, replyText(c, e)) : null;
   const courses = courseList(c, e);
+  const x = extras(c, e);
   const body = html`
     <div class="enq">
       <div class="seg" role="radiogroup" aria-label="Status">
@@ -209,6 +238,9 @@ function openDetail(id, ctx, { onClose } = {}) {
           ? html`<ul class="dl__list">${courses.map((x) => html`<li>${x.code ? html`<span class="mono-code">${x.code}</span>` : ""}${x.title}${x.missing ? html` <span class="muted">(no longer in the catalogue)</span>` : ""}</li>`)}</ul>`
           : html`<span class="muted">None chosen</span>`}</dd></div>
         <div><dt>Format</dt><dd>${modeLabel(e.mode) || html`<span class="muted">No preference</span>`}</dd></div>
+        ${x.plan ? html`<div><dt>Plan</dt><dd>${x.plan}</dd></div>` : ""}
+        ${x.score ? html`<div><dt>Placement score</dt><dd class="num">${x.score}</dd></div>` : ""}
+        ${x.resource ? html`<div><dt>Resource</dt><dd>${x.resource}</dd></div>` : ""}
         <div><dt>Source</dt><dd>${SOURCE[e.source] || e.source || "Website form"}</dd></div>
       </dl>
 
@@ -294,18 +326,37 @@ function openDetail(id, ctx, { onClose } = {}) {
 
 function openAdd(ctx) {
   const draft = { name: "", studentName: "", phone: "", email: "", level: "", mode: "", courseIds: [], message: "" };
+  let form = null;
+  let start = "";
+  let saved = false;
   const drawer = openDrawer({
     eyebrow: "New enquiry",
     title: "Add an enquiry",
     body: html`<p class="drawer__intro">For enquiries that came in by WhatsApp, phone or email — keep them here with the rest.</p><form class="drawer-form" novalidate data-form>${renderFields(enquiryFields, draft, state.working)}</form>`,
     footer: html`<span class="drawer__spacer"></span><button type="button" class="a-btn a-btn--ghost" data-drawer-close>Cancel</button><button type="button" class="a-btn a-btn--primary" data-save>Add enquiry</button>`,
+    // Esc, the scrim, Close and Cancel all ask before throwing away what was typed.
+    onRequestClose: async () => {
+      if (saved || !form) return true;
+      if (store.stableStringify(form.collect({ ...draft })) === start) return true;
+      return confirmDialog({
+        eyebrow: "Unsaved enquiry",
+        title: "Discard this enquiry?",
+        body: html`<p>You've started an enquiry but haven't added it. Discarded details can't be recovered.</p>`,
+        confirmLabel: "Discard",
+        cancelLabel: "Keep editing",
+        danger: true,
+      });
+    },
   });
-  const form = bindForm(drawer.body, enquiryFields, { item: draft, content: state.working, onField: () => {} });
+  form = bindForm(drawer.body, enquiryFields, { item: draft, content: state.working, onField: () => {} });
+  start = store.stableStringify(form.collect({ ...draft }));
   const save = () => {
+    if (saved) return;
     const errors = form.validateAll();
     if (errors.length) return focusFirstError(errors);
     form.collect(draft);
     const rec = store.addEnquiry({ ...draft, source: "manual" });
+    saved = true;
     drawer.close();
     toast(`Added the enquiry from ${rec.name}`, { tone: "ok" });
   };
@@ -429,7 +480,7 @@ export default {
           if (row) flash(row);
         },
       });
-      if (current) ctx.replaceRoute(`enquiries/${encodeURIComponent(id)}`);
+      ctx.replaceRoute(current ? `enquiries/${encodeURIComponent(id)}` : "enquiries");
     };
 
     const onClick = async (e) => {
