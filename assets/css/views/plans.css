@@ -1,0 +1,1966 @@
+/* ==========================================================================
+   Plans & timetable (#/plans) — view-specific styles. Everything is scoped
+   to .view--plans and uses the context colours from site.css (--fg, --hair…)
+   so blocks flip correctly on ink.
+   ========================================================================== */
+
+.view--plans {
+  --pl-rule-0: 2px dotted currentColor; /* Grade 7–9 */
+  --pl-rule-1: 1px solid currentColor; /* SC */
+  --pl-rule-2: 3px double currentColor; /* HSC */
+}
+
+/* Level key: line style, not colour. */
+.view--plans .pl-key {
+  display: inline-block;
+  flex: none;
+  width: 18px;
+  height: 3px;
+  border-top: var(--pl-rule-1);
+  vertical-align: middle;
+}
+.view--plans .pl-lv-0 .pl-key {
+  border-top: var(--pl-rule-0);
+}
+.view--plans .pl-lv-2 .pl-key {
+  border-top: var(--pl-rule-2);
+}
+
+/* Section label — "Section A  Fees", like the headings of an exam paper. */
+.view--plans .pl-sec {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: clamp(22px, 2.6vw, 34px);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.view--plans .pl-sec__k {
+  padding: 5px 9px 4px;
+  border: 1px solid var(--fg);
+  color: var(--fg);
+  line-height: 1;
+}
+
+/* ------------------------------------------------------------------ hero */
+
+.view--plans .pl-hero__grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--grid-gap);
+}
+.view--plans .pl-hero__grid > * {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.view--plans .pl-hero__eyebrow {
+  justify-self: start;
+  margin-bottom: clamp(22px, 3.4vh, 36px);
+}
+.view--plans .pl-hero__title {
+  font-size: clamp(3rem, 7vw, 7.25rem);
+  line-height: 0.93;
+}
+.view--plans .pl-hero__title em {
+  white-space: nowrap;
+}
+.view--plans .pl-hero__lead {
+  margin-top: clamp(22px, 3.2vh, 34px);
+  max-width: 40ch;
+}
+
+.view--plans .pl-toc {
+  margin-top: clamp(32px, 6vh, 64px);
+}
+.view--plans .pl-toc__list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--hair-strong);
+}
+.view--plans .pl-toc__list > li {
+  min-width: 0;
+}
+.view--plans .pl-toc__link {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  row-gap: 8px;
+  padding: 14px 16px 6px 0;
+  color: var(--fg);
+  text-decoration: none;
+}
+.view--plans .pl-toc__list > li + li .pl-toc__link {
+  padding-left: 16px;
+  border-left: 1px solid var(--hair);
+}
+.view--plans .pl-toc__link::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--fg);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 0.55s var(--ease-out);
+}
+.view--plans .pl-toc__k {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.12em;
+  color: var(--fg-3);
+}
+.view--plans .pl-toc__n {
+  grid-row: 1;
+  grid-column: 2;
+  justify-self: end;
+}
+.view--plans .pl-toc__t {
+  grid-column: 1 / -1;
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 1.7vw, 1.6rem);
+  line-height: 1.05;
+  transition: transform 0.5s var(--ease-out);
+}
+@media (hover: hover) {
+  .view--plans .pl-toc__link:hover::before {
+    transform: scaleX(1);
+  }
+  .view--plans .pl-toc__link:hover .pl-toc__t {
+    transform: translateX(4px);
+  }
+}
+.view--plans .pl-toc__link:focus-visible {
+  outline-offset: -2px;
+}
+
+@media (min-width: 900px) {
+  .view--plans .pl-hero__title {
+    grid-column: 1 / span 9;
+  }
+  .view--plans .pl-hero__lead {
+    grid-column: 1 / span 6;
+  }
+  .view--plans .pl-toc {
+    grid-column: 1 / span 7;
+  }
+}
+@media (min-width: 1200px) {
+  .view--plans .pl-hero__lead {
+    grid-column: 1 / span 5;
+  }
+  .view--plans .pl-toc {
+    grid-column: 1 / span 6;
+  }
+}
+@media (max-width: 767px) {
+  /* a full first screen keeps the text clear of the 3D tower above it */
+  .view--plans .pl-hero {
+    min-height: max(100svh, 640px);
+  }
+}
+@media (max-width: 599px) {
+  .view--plans .pl-hero__title {
+    font-size: clamp(2.6rem, 12.4vw, 3.4rem);
+  }
+  .view--plans .pl-hero__lead {
+    font-size: 1.0625rem;
+  }
+  .view--plans .pl-toc {
+    margin-top: 28px;
+  }
+  .view--plans .pl-toc__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .view--plans .pl-toc__link,
+  .view--plans .pl-toc__list > li + li .pl-toc__link {
+    padding: 10px 12px 10px 0;
+    border-left: 0;
+  }
+  .view--plans .pl-toc__list > li:nth-child(even) .pl-toc__link {
+    padding-left: 12px;
+    border-left: 1px solid var(--hair);
+  }
+  .view--plans .pl-toc__list > li:nth-child(n + 3) {
+    border-top: 1px solid var(--hair);
+  }
+  .view--plans .pl-toc__link {
+    row-gap: 4px;
+  }
+  .view--plans .pl-toc__t {
+    font-size: 1.2rem;
+  }
+}
+
+/* ------------------------------------------------------------------ fees */
+
+.view--plans .pl-fees__head {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--grid-gap);
+  row-gap: 32px;
+  align-items: end;
+}
+.view--plans .pl-fees__head > * {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.view--plans .pl-fees__head .pl-sec {
+  margin-bottom: 0;
+}
+@media (min-width: 1000px) {
+  .view--plans .pl-fees__title {
+    grid-column: 1 / span 7;
+  }
+  .view--plans .pl-bill {
+    grid-column: 8 / -1;
+    justify-self: end;
+  }
+}
+
+/* Billing switch: two radios in a pill; the ink thumb stretches across (leading edge first). */
+.view--plans .pl-bill {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+}
+.view--plans .pl-switch {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.view--plans .pl-switch__legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.view--plans .pl-switch__track {
+  --pad: 5px;
+  position: relative;
+  clear: both;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 300px;
+  max-width: 100%;
+  height: 58px;
+  padding: var(--pad);
+  border: 1px solid var(--hair-strong);
+  border-radius: var(--r-pill);
+}
+.view--plans .pl-switch__thumb {
+  position: absolute;
+  top: var(--pad);
+  bottom: var(--pad);
+  left: var(--pad);
+  right: 50%;
+  border-radius: var(--r-pill);
+  background: var(--fg);
+  transition:
+    left 0.6s var(--ease-out),
+    right 0.6s var(--ease-out) 0.08s;
+}
+.view--plans[data-billing="termly"] .pl-switch__thumb {
+  left: 50%;
+  right: var(--pad);
+  transition:
+    left 0.6s var(--ease-out) 0.08s,
+    right 0.6s var(--ease-out);
+}
+.view--plans .pl-switch__opt {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  color: var(--fg);
+  font-size: 0.9375rem;
+  font-weight: 540;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.45s var(--ease-out);
+}
+.view--plans[data-billing="monthly"] .pl-switch__opt:first-of-type,
+.view--plans[data-billing="termly"] .pl-switch__opt:last-of-type {
+  color: var(--surface);
+}
+.view--plans .pl-switch__opt input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.view--plans .pl-switch__opt:has(input:focus-visible) {
+  outline: 2px solid var(--red);
+  outline-offset: 3px;
+}
+
+.view--plans .pl-bill {
+  position: relative;
+}
+.view--plans .pl-bill__note {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 4px;
+  padding-right: 58px;
+}
+.view--plans .pl-bill__note .margin-note {
+  order: 1;
+  max-width: 26ch;
+  text-wrap: balance;
+  margin-top: 22px;
+  font-size: 1.1rem;
+}
+.view--plans .pl-bill__arrow {
+  order: 2;
+  flex: none;
+  width: 4.5rem;
+  margin-top: 4px;
+  transform: rotate(-6deg);
+}
+/* From 1200px the note hangs in the margin between the switch and the plan sheet. Narrower, the
+   recommended plan's ink block sits under the switch column and would cover it, so the note stays
+   in flow and pushes the sheet down. */
+@media (min-width: 1200px) {
+  .view--plans .pl-bill__note {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: max-content;
+  }
+  /* The hanging note takes no space: leave room for it above the sheet's top rule. */
+  .view--plans .pl-fees__head:has(.pl-bill__note) + .pl-plans {
+    margin-top: 7rem;
+  }
+}
+@media (max-width: 999px) {
+  .view--plans .pl-bill {
+    justify-items: stretch;
+  }
+  .view--plans .pl-switch__track {
+    width: min(100%, 420px);
+  }
+  .view--plans .pl-bill__note {
+    justify-content: flex-start;
+    padding-right: 0;
+  }
+  .view--plans .pl-bill__note .margin-note {
+    margin-top: 26px;
+  }
+}
+
+/* Plan sheet: one ruled sheet; the recommended column is a block of ink that overhangs it. */
+.view--plans .pl-plans {
+  display: grid;
+  gap: 16px;
+  margin-top: clamp(56px, 7vw, 104px);
+}
+.view--plans .pl-plan {
+  position: relative;
+  z-index: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  min-width: 0;
+  color: var(--fg);
+}
+.view--plans .pl-plan--hi::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: var(--r-sm);
+  background: var(--ink);
+}
+.view--plans .pl-plan__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 28px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.view--plans .pl-plan__pick {
+  color: var(--fg);
+  padding-right: 6px;
+}
+.view--plans .pl-plan__pick .pen--circle {
+  left: -14%;
+  top: -42%;
+  width: 128%;
+  height: 184%;
+}
+.view--plans .pl-plan__name {
+  margin-top: 18px;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 2.7vw, 2.75rem);
+  line-height: 1;
+  letter-spacing: -0.015em;
+}
+.view--plans .pl-plan__price {
+  margin-top: clamp(28px, 3.4vw, 48px);
+}
+.view--plans .pl-price {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  white-space: nowrap;
+}
+.view--plans .pl-price__cur {
+  align-self: flex-start;
+  margin-top: 0.7em;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+  color: var(--fg-3);
+}
+.view--plans .pl-price__num {
+  font-family: var(--font-display);
+  font-size: clamp(3.75rem, 5.6vw, 6rem);
+  line-height: 0.84;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.view--plans .pl-price--ask {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3vw, 2.75rem);
+  font-style: italic;
+}
+
+/* Text that swaps with the billing period rolls like a counter: month leaves upwards, term rises in. */
+.view--plans .pl-price__per,
+.view--plans .pl-swap {
+  display: inline-grid;
+  overflow: hidden;
+}
+.view--plans .pl-price__per > *,
+.view--plans .pl-swap > * {
+  grid-area: 1 / 1;
+}
+.view--plans .pl-price__per {
+  padding-block: 2px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+.view--plans .pl-when {
+  transition:
+    transform 0.7s var(--ease-out),
+    opacity 0.45s var(--ease-out),
+    visibility 0s linear 0s;
+}
+.view--plans[data-billing="monthly"] .pl-when--t,
+.view--plans[data-billing="termly"] .pl-when--m {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    transform 0.7s var(--ease-out),
+    opacity 0.3s var(--ease-out),
+    visibility 0s linear 0.7s;
+}
+.view--plans[data-billing="monthly"] .pl-when--t {
+  transform: translateY(110%);
+}
+.view--plans[data-billing="termly"] .pl-when--m {
+  transform: translateY(-110%);
+}
+
+.view--plans .pl-plan__alt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 16px;
+  font-size: 0.9rem;
+  color: var(--fg-2);
+}
+.view--plans .pl-plan__save {
+  padding: 4px 8px 3px;
+  border: 1px solid var(--hair-strong);
+  border-radius: 2px;
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.view--plans .pl-plan__desc {
+  margin-top: clamp(24px, 2.6vw, 34px);
+  max-width: 40ch;
+  color: var(--fg-2);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+.view--plans .pl-plan__feats {
+  display: grid;
+  align-content: start;
+  gap: 0;
+  margin-top: clamp(22px, 2.4vw, 30px);
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  border-top: 1px solid var(--hair);
+}
+.view--plans .pl-plan__feats li {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--hair);
+}
+.view--plans .pl-plan__tick {
+  width: 20px;
+  height: 16px;
+  margin-top: 1px;
+}
+.view--plans .pl-plan__cta {
+  align-self: end;
+  margin-top: clamp(28px, 3vw, 40px);
+}
+
+/* Small screens: stacked; plain plans are ruled, the recommended one is a block of ink. */
+@media (max-width: 999px) {
+  .view--plans .pl-plan {
+    padding: 26px 0 8px;
+    border-top: 2px solid var(--fg);
+  }
+  .view--plans .pl-plan + .pl-plan {
+    margin-top: 32px;
+  }
+  .view--plans .pl-plan--hi {
+    padding: 28px clamp(20px, 4vw, 32px) 28px;
+    border-top: 0;
+  }
+  .view--plans .pl-plans {
+    gap: 0;
+  }
+}
+@media (min-width: 640px) and (max-width: 999px) {
+  .view--plans .pl-plan {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    grid-template-areas:
+      "meta  desc"
+      "name  desc"
+      "price feats"
+      ".     feats"
+      ".     cta";
+    column-gap: clamp(28px, 5vw, 56px);
+  }
+  .view--plans .pl-plan__meta { grid-area: meta; }
+  .view--plans .pl-plan__name { grid-area: name; }
+  .view--plans .pl-plan__price { grid-area: price; }
+  .view--plans .pl-plan__desc { grid-area: desc; margin-top: 0; }
+  .view--plans .pl-plan__feats { grid-area: feats; }
+  .view--plans .pl-plan__cta { grid-area: cta; }
+}
+
+@media (min-width: 1000px) {
+  .view--plans .pl-plans {
+    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+    grid-template-rows: repeat(var(--tracks), auto);
+    gap: 0;
+    border-top: 2px solid var(--fg);
+    border-bottom: 1px solid var(--hair-strong);
+  }
+  .view--plans .pl-plans[data-n="1"] {
+    grid-template-columns: minmax(0, 40rem);
+  }
+  .view--plans .pl-plan {
+    grid-row: span 6;
+    grid-template-rows: subgrid;
+    padding: 30px clamp(24px, 2.6vw, 44px) 36px;
+    border-left: 1px solid var(--hair);
+  }
+  .view--plans .pl-plan:nth-child(3n + 1) {
+    border-left: 0;
+  }
+  .view--plans .pl-plan:nth-child(3n + 1):not(.pl-plan--hi) {
+    padding-left: 0;
+  }
+  .view--plans .pl-plan:nth-child(3n):not(.pl-plan--hi),
+  .view--plans .pl-plan:last-child:not(.pl-plan--hi) {
+    padding-right: 0;
+  }
+  .view--plans .pl-plan--hi,
+  .view--plans .pl-plan--hi + .pl-plan {
+    border-left: 0;
+  }
+  .view--plans .pl-plan--hi::before {
+    inset: -36px 0 -28px;
+  }
+  .view--plans .pl-plan > * {
+    min-width: 0;
+  }
+}
+
+.view--plans .pl-fees__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px 40px;
+  margin-top: clamp(48px, 6vw, 88px);
+  color: var(--fg-3);
+  font-size: var(--fs-small);
+}
+.view--plans .pl-fees__foot p {
+  max-width: 62ch;
+}
+
+.view--plans .pl-empty {
+  margin-top: clamp(40px, 5vw, 72px);
+}
+
+/* ------------------------------------------------------------------ paying (ink) + fee slip */
+
+.view--plans .pl-pay__grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--grid-gap);
+  row-gap: clamp(56px, 8vw, 96px);
+  align-items: center;
+}
+.view--plans .pl-pay__grid > * {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+@media (min-width: 1000px) {
+  .view--plans .pl-pay__text {
+    grid-column: 1 / span 5;
+  }
+  .view--plans .pl-pay__slip {
+    grid-column: 7 / -1;
+  }
+}
+.view--plans .pl-pay__title {
+  margin-bottom: clamp(36px, 4.6vw, 64px);
+}
+.view--plans .pl-steps {
+  border-bottom: 1px solid var(--hair);
+}
+.view--plans .pl-steps__item {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  gap: 12px;
+  padding: 22px 0 24px;
+  border-top: 1px solid var(--hair);
+}
+.view--plans .pl-steps__n {
+  padding-top: 0.55em;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.08em;
+  color: var(--fg-3);
+}
+.view--plans .pl-steps__t {
+  display: block;
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 1.9vw, 1.75rem);
+  line-height: 1.1;
+  color: var(--fg);
+}
+.view--plans .pl-steps__d {
+  display: block;
+  margin-top: 8px;
+  max-width: 44ch;
+  color: var(--fg-2);
+  font-size: 0.9375rem;
+}
+
+.view--plans .pl-slip {
+  position: relative;
+  max-width: 31rem;
+  margin: 0 auto;
+  rotate: -1.6deg;
+}
+.view--plans .pl-slip__paper {
+  /* back to paper context inside the ink section */
+  --fg: var(--ink);
+  --fg-2: var(--ink-2);
+  --fg-3: var(--ink-3);
+  --hair: var(--line);
+  --hair-strong: var(--line-strong);
+  --surface: var(--card);
+  --surface-raised: var(--paper);
+  --accent-text: var(--red-ink);
+  --zz: 14px;
+  container-type: inline-size;
+  position: relative;
+  padding: 46px clamp(22px, 3vw, 40px) 40px;
+  background: var(--card);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  -webkit-mask:
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / var(--zz) 51% repeat-x,
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--zz) 51% repeat-x;
+  mask:
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / var(--zz) 51% repeat-x,
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--zz) 51% repeat-x;
+}
+/* faint printer banding */
+.view--plans .pl-slip__paper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    var(--grain) 0 0 / 240px 240px,
+    repeating-linear-gradient(180deg, transparent 0 3px, rgba(22, 21, 19, 0.018) 3px 4px);
+  opacity: 0.55;
+}
+.view--plans .pl-slip__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.view--plans .pl-slip__brand {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+.view--plans .pl-slip__word {
+  font-family: var(--font-display);
+  font-size: 2.1rem;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+}
+.view--plans .pl-slip__rest {
+  font-size: 0.6875rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+.view--plans .pl-slip__kind {
+  flex: none;
+  margin-top: 4px;
+  padding: 5px 8px 4px;
+  border: 1px solid var(--fg);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.view--plans .pl-slip__addr,
+.view--plans .pl-slip__date {
+  font-size: 0.75rem;
+  color: var(--fg-3);
+}
+.view--plans .pl-slip__addr {
+  margin-top: 14px;
+}
+.view--plans .pl-slip__cut {
+  height: 0;
+  margin: 22px 0;
+  border-top: 1px dashed var(--line-strong);
+}
+.view--plans .pl-slip__rows {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+.view--plans .pl-slip__row {
+  display: grid;
+  grid-template-columns: 8.75rem minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 12px;
+}
+.view--plans .pl-slip__row dt {
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.view--plans .pl-slip__row dd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+}
+.view--plans .pl-slip__val {
+  min-width: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+@container (max-width: 360px) {
+  .view--plans .pl-slip__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.view--plans .pl-copy {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 11px 0 9px;
+  border: 1px solid var(--hair-strong);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: background-color 0.3s var(--ease-out), color 0.3s var(--ease-out), border-color 0.3s var(--ease-out), scale 0.2s var(--ease-out);
+}
+.view--plans .pl-copy:active {
+  scale: 0.95;
+}
+@media (hover: hover) {
+  .view--plans .pl-copy:hover {
+    border-color: var(--fg);
+  }
+}
+.view--plans .pl-copy__icon {
+  position: relative;
+  display: inline-grid;
+  width: 14px;
+  height: 14px;
+}
+.view--plans .pl-copy__icon .icon {
+  grid-area: 1 / 1;
+  transition: transform 0.4s var(--ease-out), opacity 0.3s;
+}
+.view--plans .pl-copy__icon .icon--check {
+  opacity: 0;
+  transform: scale(0.4);
+}
+.view--plans .pl-copy.is-done {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--card);
+}
+.view--plans .pl-copy.is-done .icon--copy {
+  opacity: 0;
+  transform: scale(0.4);
+}
+.view--plans .pl-copy.is-done .icon--check {
+  opacity: 1;
+  transform: none;
+}
+.view--plans .pl-copy.is-fail {
+  border-color: var(--red);
+  color: var(--accent-text);
+}
+
+.view--plans .pl-slip__items {
+  width: 100%;
+  border-collapse: collapse;
+}
+.view--plans .pl-slip__items th,
+.view--plans .pl-slip__items td {
+  padding: 5px 0;
+  font-weight: 400;
+  text-align: left;
+  vertical-align: bottom;
+}
+.view--plans .pl-slip__items thead th {
+  padding-bottom: 10px;
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.view--plans .pl-slip__items .pl-slip__per {
+  text-align: right;
+  white-space: nowrap;
+}
+.view--plans .pl-slip__per .pl-swap {
+  vertical-align: bottom;
+}
+.view--plans .pl-slip__per .pl-when {
+  justify-self: end;
+}
+.view--plans .pl-slip__items tbody th {
+  width: 100%;
+  font-size: 0.875rem;
+  background-image: radial-gradient(circle, var(--ink-4) 0.9px, transparent 1.2px);
+  background-size: 6px 6px;
+  background-repeat: repeat-x;
+  background-position: 0 calc(100% - 7px);
+}
+.view--plans .pl-slip__item {
+  padding-right: 8px;
+  background: var(--card);
+}
+.view--plans .pl-slip__items td {
+  padding-left: 8px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.view--plans .pl-slip__code {
+  width: 58%;
+  height: 46px;
+  margin-top: 4px;
+  background:
+    repeating-linear-gradient(90deg, var(--ink) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, transparent 0 4px, var(--ink) 4px 6px, transparent 6px 11px),
+    repeating-linear-gradient(90deg, transparent 0 13px, var(--ink) 13px 16px, transparent 16px 23px);
+  opacity: 0.82;
+}
+.view--plans .pl-slip__thanks {
+  width: 58%;
+  margin-top: 10px;
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.view--plans .pl-stamp {
+  position: absolute;
+  right: clamp(14px, 6%, 36px);
+  bottom: 12px;
+  width: clamp(112px, 30%, 142px);
+  height: auto;
+  overflow: visible;
+  color: var(--red);
+  rotate: -12deg;
+  opacity: 0.92;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+.view--plans .pl-stamp__ring {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  fill: currentColor;
+}
+.view--plans .pl-stamp__mid {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-style: italic;
+  fill: currentColor;
+}
+
+@media (max-width: 599px) {
+  .view--plans .pl-slip {
+    rotate: -1deg;
+    margin-inline: 4px;
+  }
+  .view--plans .pl-stamp {
+    bottom: 22px;
+    width: 100px;
+  }
+}
+
+/* ------------------------------------------------------------------ timetable */
+
+.view--plans .pl-tt__head {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--grid-gap);
+  row-gap: 24px;
+  align-items: end;
+}
+.view--plans .pl-tt__head > * {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.view--plans .pl-tt__head .pl-sec {
+  margin-bottom: 0;
+}
+.view--plans .pl-tt__intro {
+  max-width: 40ch;
+  color: var(--fg-2);
+  text-wrap: pretty;
+}
+@media (min-width: 1000px) {
+  .view--plans .pl-tt__title {
+    grid-column: 1 / span 7;
+  }
+  .view--plans .pl-tt__intro {
+    grid-column: 9 / -1;
+    padding-bottom: 0.4em;
+  }
+}
+
+.view--plans .pl-tt__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 32px;
+  margin-top: clamp(40px, 5vw, 72px);
+  margin-bottom: 24px;
+}
+.view--plans .pl-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.view--plans .pl-filter__k {
+  margin-right: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.view--plans .pl-chip .pl-key {
+  width: 14px;
+  margin-right: 2px;
+}
+.view--plans .pl-tt__key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.1em;
+  color: var(--fg-3);
+}
+.view--plans .pl-tt__key > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fg-2);
+}
+.view--plans .pl-tt__key .pl-key {
+  width: 22px;
+}
+
+/* Desktop grid: days across, time down, blocks positioned by start/end. */
+.view--plans .pl-grid {
+  --axis: 58px;
+  --hour: 62px;
+  position: relative;
+  padding-bottom: 22px;
+}
+@media (min-width: 1280px) {
+  .view--plans .pl-grid {
+    --axis: 64px;
+    --hour: 66px;
+  }
+}
+.view--plans .pl-grid__head,
+.view--plans .pl-grid__body {
+  display: grid;
+  grid-template-columns: var(--axis) repeat(var(--days), minmax(0, 1fr));
+}
+.view--plans .pl-grid__head {
+  border-top: 2px solid var(--fg);
+  border-bottom: 1px solid var(--hair-strong);
+}
+.view--plans .pl-grid__corner {
+  align-self: end;
+  padding-bottom: 13px;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  color: var(--fg-3);
+}
+.view--plans .pl-grid__day {
+  display: grid;
+  gap: 6px;
+  padding: 16px 12px 13px;
+  border-left: 1px solid var(--hair);
+}
+.view--plans .pl-grid__dname {
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 1.6vw, 1.6rem);
+  line-height: 1;
+}
+.view--plans .pl-grid__dmeta {
+  display: flex;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.view--plans .pl-grid__today,
+.view--plans .pl-panel__today {
+  display: none;
+  color: var(--accent-text);
+}
+.view--plans .is-today .pl-grid__today,
+.view--plans .pl-panel__today.is-today {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.view--plans .is-today .pl-grid__today::before,
+.view--plans .pl-panel__today.is-today::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+}
+.view--plans .pl-grid__day.is-today {
+  box-shadow: inset 0 2px 0 var(--red);
+}
+
+.view--plans .pl-grid__body {
+  position: relative;
+  height: calc(var(--hours) * var(--hour));
+}
+.view--plans .pl-grid__axis {
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
+}
+.view--plans .pl-grid__hour {
+  position: absolute;
+  left: 0;
+  top: calc(var(--t) * 100%);
+  padding-top: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  color: var(--fg-3);
+  font-variant-numeric: tabular-nums;
+}
+.view--plans .pl-grid__lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.view--plans .pl-grid__hr {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--t) * 100%);
+  height: 1px;
+  background: var(--hair);
+}
+.view--plans .pl-grid__band {
+  position: absolute;
+  top: 0;
+  left: var(--axis);
+  width: calc((100% - var(--axis)) * 5 / var(--days));
+  height: calc(var(--h) * 100%);
+  display: grid;
+  place-items: center;
+  background: repeating-linear-gradient(-45deg, var(--line) 0 1px, transparent 1px 10px);
+  pointer-events: none;
+}
+.view--plans .pl-grid__band-label {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 18px 26px 16px;
+  border: 1px solid var(--hair);
+  background: var(--surface);
+  text-align: center;
+}
+.view--plans .pl-grid__band-label span:first-child {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 2.2vw, 2.1rem);
+  font-style: italic;
+  line-height: 1;
+  color: var(--fg);
+}
+.view--plans .pl-grid__band-label span:last-child {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.view--plans .pl-grid__col {
+  position: relative;
+  grid-row: 1;
+  border-left: 1px solid var(--hair);
+}
+.view--plans .pl-grid__col.is-today {
+  background: color-mix(in srgb, var(--card) 70%, transparent);
+}
+.view--plans .pl-grid__list {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.view--plans .pl-blk {
+  position: absolute;
+  top: calc(var(--t) * 100% + 3px);
+  left: calc(var(--l) * 100% + 5px);
+  width: calc(var(--w) * 100% - 10px);
+  height: calc(var(--h) * 100% - 6px);
+  container-type: size;
+  z-index: 1;
+}
+@media (max-width: 1199px) {
+  .view--plans .pl-grid {
+    --axis: 46px;
+  }
+  .view--plans .pl-blk {
+    left: calc(var(--l) * 100% + 3px);
+    width: calc(var(--w) * 100% - 6px);
+  }
+}
+/* The block is a wrapping column: every line is full width, so a line that doesn't fit the lesson's
+   height wraps into a second column, which overflow:hidden drops whole. Nothing is ever sliced
+   through the glyphs, whatever the title, room or lesson length. */
+.view--plans .pl-blk__link {
+  position: relative;
+  display: flex;
+  flex-flow: column wrap;
+  align-content: flex-start;
+  gap: 2px;
+  height: 100%;
+  padding: 7px 9px 8px;
+  border: 1px solid var(--hair);
+  border-top: var(--pl-rule-1);
+  border-radius: 2px;
+  background: var(--card);
+  color: var(--fg);
+  text-decoration: none;
+  overflow: hidden;
+  transition:
+    background-color 0.35s var(--ease-out),
+    color 0.35s var(--ease-out),
+    border-color 0.35s var(--ease-out),
+    opacity 0.45s var(--ease-out);
+}
+.view--plans .pl-lv-0 .pl-blk__link {
+  border-top: var(--pl-rule-0);
+}
+.view--plans .pl-lv-2 .pl-blk__link {
+  border-top: var(--pl-rule-2);
+}
+.view--plans .pl-blk__link > * {
+  width: 100%;
+  flex-shrink: 0;
+}
+.view--plans .pl-blk__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.view--plans .pl-blk__code {
+  font-weight: 520;
+}
+.view--plans .pl-blk__lvl {
+  color: var(--fg-3);
+}
+.view--plans .pl-blk__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 560;
+  line-height: 1.18;
+  letter-spacing: -0.01em;
+}
+.view--plans .pl-blk__time {
+  margin-top: auto;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1.25;
+  color: var(--fg-2);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.view--plans .pl-blk__room {
+  font-size: 0.75rem;
+  line-height: 1.25;
+  color: var(--fg-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* While a lesson is on, the tag takes the room's line (in flow, so it never sits over text). */
+.view--plans .pl-blk__live {
+  display: none;
+  align-self: flex-start;
+  width: auto;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: var(--red-ink);
+  color: var(--on-ink);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.view--plans .pl-blk.is-live .pl-blk__live {
+  display: block;
+}
+.view--plans .pl-blk.is-live .pl-blk__room,
+.view--plans .pl-blk__live-s {
+  display: none;
+}
+/* Blocks are size containers: when a lesson is short or narrow, drop the least important lines
+   rather than clipping them (the readout and the course page carry the rest). */
+.view--plans .pl-blk__short {
+  display: none;
+}
+@container (max-width: 118px) {
+  .view--plans .pl-blk__lvl {
+    display: none;
+  }
+  .view--plans .pl-blk__room {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+  }
+  .view--plans .pl-blk__title {
+    font-size: 0.8125rem;
+  }
+  .view--plans .pl-blk__link {
+    padding-inline: 7px;
+  }
+  .view--plans .pl-blk__live-l {
+    display: none;
+  }
+  .view--plans .pl-blk__live-s {
+    display: inline;
+  }
+}
+/* After the narrow rule above, so a short block drops its room even when the room could wrap. */
+@container (max-width: 160px) and (max-height: 104px) {
+  .view--plans .pl-blk__room {
+    display: none;
+  }
+}
+@container (max-width: 92px) {
+  .view--plans .pl-blk__title {
+    overflow-wrap: anywhere;
+  }
+  .view--plans .pl-blk__full {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .view--plans .pl-blk__short {
+    display: inline;
+  }
+}
+@container (max-width: 90px) {
+  .view--plans .pl-blk__room,
+  .view--plans .pl-blk__end {
+    display: none;
+  }
+  .view--plans .pl-blk__link {
+    padding-inline: 6px;
+  }
+}
+
+/* Linked hover/focus: every lesson of the same course turns to ink, the rest recede. */
+.view--plans .pl-grid.has-hl .pl-blk:not(.is-hl) .pl-blk__link {
+  opacity: 0.5;
+}
+.view--plans .pl-blk.is-hl .pl-blk__link {
+  --fg: var(--on-ink);
+  --fg-2: var(--on-ink-2);
+  --fg-3: color-mix(in srgb, var(--on-ink) 56%, transparent);
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.view--plans .pl-blk__link:focus-visible {
+  outline-offset: 2px;
+}
+.view--plans .pl-blk.is-out .pl-blk__link,
+.view--plans .pl-grid.has-hl .pl-blk.is-out .pl-blk__link {
+  opacity: 0.16;
+  background: transparent;
+  border-style: dashed;
+}
+
+.view--plans .pl-grid__now {
+  position: absolute;
+  z-index: 3;
+  left: -1px;
+  right: 0;
+  top: calc(var(--t) * 100%);
+  height: 0;
+  border-top: 1.5px solid var(--red);
+  pointer-events: none;
+}
+.view--plans .pl-grid__now::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: -4.75px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+}
+.view--plans .pl-grid__now-t {
+  position: absolute;
+  right: 4px;
+  bottom: 3px;
+  padding: 1px 4px;
+  background: var(--surface);
+  color: var(--accent-text);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+}
+
+/* Readout under the grid: the whole week of the course under the pointer. */
+.view--plans .pl-tt__readout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 18px;
+  min-height: 74px;
+  padding-top: 20px;
+  border-top: 1px solid var(--hair-strong);
+  color: var(--fg-2);
+  font-size: 0.875rem;
+}
+.view--plans .pl-tt__readout.is-swap {
+  animation: pl-readout 0.45s var(--ease-out);
+}
+@keyframes pl-readout {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.view--plans .pl-ro__hint {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.view--plans .pl-ro__code {
+  padding: 4px 8px 3px;
+  border: 1px solid var(--fg);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: var(--fg);
+}
+.view--plans .pl-ro__title {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--fg);
+}
+.view--plans .pl-ro__slots {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.view--plans .pl-ro__slots > span {
+  padding: 3px 7px 2px;
+  background: var(--ink);
+  color: var(--on-ink);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  border-radius: 2px;
+}
+.view--plans .pl-ro__go {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg);
+}
+
+/* Small screens: day tabs + a list. */
+.view--plans .pl-tt__mob {
+  display: none;
+}
+@media (max-width: 959px) {
+  .view--plans .pl-tt__desk,
+  .view--plans .pl-tt__readout,
+  .view--plans .pl-tt__key {
+    display: none;
+  }
+  .view--plans .pl-tt__mob {
+    display: block;
+  }
+  .view--plans .pl-tt__bar {
+    margin-bottom: 20px;
+  }
+  .view--plans .pl-filter {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin-inline: calc(var(--gutter) * -1);
+    padding-inline: var(--gutter);
+    padding-block: 2px;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+  .view--plans .pl-filter::-webkit-scrollbar {
+    display: none;
+  }
+  .view--plans .pl-filter .chip {
+    flex: none;
+  }
+}
+
+.view--plans .pl-tabs {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  padding: 4px;
+  border: 1px solid var(--hair-strong);
+  border-radius: var(--r-sm);
+}
+.view--plans .pl-tabs__thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / var(--n));
+  border-radius: 2px;
+  background: var(--fg);
+  transform: translateX(calc(var(--i) * 100%));
+  transition: transform 0.55s var(--ease-out);
+}
+.view--plans .pl-tab {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  min-height: 56px;
+  padding: 9px 0 8px;
+  border: 0;
+  border-radius: 2px;
+  background: none;
+  color: var(--fg);
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.35s var(--ease-out);
+}
+.view--plans .pl-tab[aria-selected="true"] {
+  color: var(--surface);
+}
+.view--plans .pl-tab__d {
+  font-size: 0.9375rem;
+  font-weight: 540;
+  line-height: 1.1;
+}
+.view--plans .pl-tab__n {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  opacity: 0.66;
+}
+.view--plans .pl-tab.is-today .pl-tab__d::after {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-left: 4px;
+  border-radius: 50%;
+  background: var(--red);
+  vertical-align: 0.3em;
+}
+.view--plans .pl-tab:focus-visible {
+  outline-offset: -3px;
+}
+
+.view--plans .pl-panel {
+  margin-top: 28px;
+}
+.view--plans .pl-panel:focus-visible {
+  outline-offset: 6px;
+}
+.view--plans .pl-panel__h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--fg);
+  font-family: var(--font-display);
+  font-size: 2.1rem;
+  line-height: 1;
+}
+.view--plans .pl-panel__today {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.view--plans .pl-rows > li {
+  border-bottom: 1px solid var(--hair);
+}
+.view--plans .pl-row__link {
+  display: grid;
+  grid-template-columns: 4.6rem minmax(0, 1fr) 22px;
+  gap: 14px;
+  align-items: start;
+  padding: 18px 0 19px;
+  color: var(--fg);
+  text-decoration: none;
+}
+.view--plans .pl-row__time {
+  display: grid;
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.view--plans .pl-row__end {
+  margin-top: 7px;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  color: var(--fg-3);
+}
+.view--plans .pl-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 7px;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.view--plans .pl-row__meta .pl-key {
+  width: 16px;
+  margin-right: 3px;
+  color: var(--fg);
+}
+.view--plans .pl-row__live {
+  display: none;
+  margin-left: 4px;
+  padding: 2px 5px;
+  border-radius: 2px;
+  background: var(--red-ink);
+  color: var(--on-ink);
+  font-size: 0.625rem;
+}
+.view--plans .pl-row.is-live .pl-row__live {
+  display: inline-block;
+}
+.view--plans .pl-row__title {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.0625rem;
+  font-weight: 560;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+.view--plans .pl-row__room {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.875rem;
+  color: var(--fg-3);
+}
+.view--plans .pl-row__go {
+  align-self: center;
+  color: var(--fg-3);
+  transition: transform 0.4s var(--ease-out), color 0.3s;
+}
+.view--plans .pl-row__link:active .pl-row__go {
+  transform: translateX(4px);
+  color: var(--fg);
+}
+.view--plans .pl-panel__empty {
+  padding: 28px 0;
+  border-bottom: 1px solid var(--hair);
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-style: italic;
+  color: var(--fg-3);
+}
+
+/* ------------------------------------------------------------------ questions */
+
+.view--plans .pl-faq__grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--grid-gap);
+  row-gap: clamp(40px, 5vw, 56px);
+}
+.view--plans .pl-faq__grid > * {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+@media (min-width: 1000px) {
+  .view--plans .pl-faq__side {
+    grid-column: 1 / span 4;
+    align-self: start;
+    position: sticky;
+    top: calc(var(--top-offset) + 40px);
+  }
+  .view--plans .pl-faq__list {
+    grid-column: 6 / -1;
+  }
+}
+.view--plans .pl-faq__ask {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  margin-top: clamp(24px, 3vw, 40px);
+  color: var(--fg-2);
+}
+.view--plans .pl-faq__list summary {
+  padding-block: 24px;
+}
+
+/* ------------------------------------------------------------------ closing: tear-off reply slip */
+
+.view--plans .pl-end {
+  padding-top: clamp(72px, 9vw, 140px);
+}
+.view--plans .pl-end.section {
+  border-top: 0;
+}
+.view--plans .pl-end__cut {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  height: 0;
+  border-top: 1.5px dashed var(--line-strong);
+}
+.view--plans .pl-end__cut span {
+  transform: translateY(-50%);
+  padding: 0 14px;
+  background: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.view--plans .pl-reply__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  margin-bottom: clamp(32px, 4vw, 56px);
+  border-bottom: 1px solid var(--hair);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.view--plans .pl-reply__head span:first-child {
+  color: var(--fg);
+}
+.view--plans .pl-reply__grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--grid-gap);
+  row-gap: 32px;
+  align-items: end;
+}
+.view--plans .pl-reply__grid > * {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+@media (min-width: 1000px) {
+  .view--plans .pl-end__title {
+    grid-column: 1 / span 7;
+  }
+  .view--plans .pl-end__note {
+    grid-column: 9 / -1;
+    padding-bottom: 0.5em;
+  }
+}
+.view--plans .pl-end__note {
+  max-width: 40ch;
+  color: var(--fg-2);
+  text-wrap: pretty;
+}
+.view--plans .pl-end__k {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg);
+}
+.view--plans .pl-end__k::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 0 3px var(--amber-wash);
+}
+
+/* "Tick one": each box is a link to the enrol form with that plan. */
+.view--plans .pl-reply__row {
+  display: grid;
+  gap: 14px;
+  margin-top: clamp(40px, 5vw, 72px);
+  padding: 22px 0;
+  border-block: 1px solid var(--hair);
+}
+@media (min-width: 900px) {
+  .view--plans .pl-reply__row {
+    grid-template-columns: 9rem minmax(0, 1fr);
+    align-items: center;
+  }
+}
+.view--plans .pl-reply__label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.view--plans .pl-reply__opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px clamp(24px, 4vw, 56px);
+}
+.view--plans .pl-reply__opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 0;
+  color: var(--fg);
+  text-decoration: none;
+}
+.view--plans .pl-reply__box {
+  position: relative;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border: 1.5px solid var(--fg);
+  border-radius: 2px;
+  transition: background-color 0.3s var(--ease-out);
+}
+.view--plans .pl-reply__tick {
+  position: absolute;
+  left: 1px;
+  bottom: 3px;
+  width: 34px;
+  height: 28px;
+  overflow: visible;
+}
+.view--plans .pl-reply__tick path {
+  stroke-dasharray: 64;
+  stroke-dashoffset: 64;
+  transition: stroke-dashoffset 0.5s var(--ease-out);
+}
+.view--plans .pl-reply__name {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2vw, 1.9rem);
+  line-height: 1;
+}
+.view--plans .pl-reply__fee {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--fg-3);
+}
+@media (hover: hover) {
+  .view--plans .pl-reply__opt:hover .pl-reply__tick path {
+    stroke-dashoffset: 0;
+  }
+}
+.view--plans .pl-reply__opt:focus-visible .pl-reply__tick path,
+.view--plans .pl-reply__opt:active .pl-reply__tick path {
+  stroke-dashoffset: 0;
+}
+
+.view--plans .pl-reply__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px 48px;
+  margin-top: clamp(32px, 4vw, 48px);
+}
+.view--plans .pl-end__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.view--plans .pl-reply__sign {
+  display: grid;
+  gap: 8px;
+  width: min(100%, 300px);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.view--plans .pl-reply__line {
+  height: 30px;
+  border-bottom: 1px solid var(--fg);
+}
+@media (max-width: 599px) {
+  .view--plans .pl-end__actions,
+  .view--plans .pl-end__actions .btn {
+    width: 100%;
+  }
+  .view--plans .pl-end__actions .btn {
+    justify-content: space-between;
+  }
+  .view--plans .pl-reply__opts {
+    display: grid;
+    gap: 4px;
+  }
+  .view--plans .pl-reply__head span:last-child {
+    display: none;
+  }
+}

@@ -1,0 +1,1096 @@
+{
+  "meta": { "schema": 1, "updatedAt": "2026-10-30T00:00:00.000Z", "sample": true },
+  "site": {
+    "name": "Kavish Tuitions",
+    "wordmark": "Kavish",
+    "tagline": "Small-group tuition for NCE, SC and HSC, in Quatre Bornes and online",
+    "description": "Small-group tuition for Grade 7 to 13 in Mauritius, in Quatre Bornes and live on Zoom: Mathematics, sciences, accounting, economics, computer science and General Paper for NCE, SC (Cambridge O Level) and HSC (Cambridge A Level).",
+    "phone": "+230 5000 0000",
+    "whatsapp": "23050000000",
+    "email": "hello@example.com",
+    "address": "Avenue des Palmiers, Quatre Bornes, Mauritius",
+    "hours": "Mon–Fri 15:30–20:30 · Sat 08:00–16:00",
+    "mapUrl": "",
+    "formEndpoint": "",
+    "social": { "facebook": "", "instagram": "", "youtube": "", "tiktok": "" },
+    "announcement": { "enabled": true, "text": "2027 enrolment is open. HSC groups are capped at 12.", "linkLabel": "Reserve a place", "href": "#/enrol" },
+    "payment": { "juice": "+230 5000 0000", "bank": "MCB · 000 000 000 00 · Kavish Tuitions", "note": "Use the student's full name as the payment reference." }
+  },
+  "hero": {
+    "eyebrow": "Grade 7 – 13 · NCE · SC · HSC",
+    "title": "Understand it properly.\nThe marks follow.",
+    "highlight": "properly",
+    "subtitle": "Small groups, live lessons, and past-paper questions marked every week. In Quatre Bornes or on Zoom.",
+    "primaryCta": { "label": "See the courses", "href": "#/courses" },
+    "secondaryCta": { "label": "Try the placement check", "href": "#/quiz" }
+  },
+  "stats": [
+    { "value": 12, "prefix": "", "suffix": "", "label": "students in a group, at most" },
+    { "value": 14, "prefix": "", "suffix": "", "label": "years Kavish has been teaching" },
+    { "value": 10, "prefix": "", "suffix": "", "label": "timed past-paper drills marked each term" },
+    { "value": 48, "prefix": "", "suffix": "h", "label": "to get homework back, marked" }
+  ],
+  "levels": [
+    {
+      "id": "lower",
+      "name": "Grade 7–9",
+      "exam": "NCE",
+      "summary": "Grade 7 to 9 is where gaps start, and where they are cheapest to fix. We rebuild number sense, algebra and basic science carefully, with short homework checked every week, so students sit the NCE with confidence and start Grade 10 with nothing to catch up on."
+    },
+    {
+      "id": "sc",
+      "name": "Grade 10–11",
+      "exam": "SC · Cambridge O Level",
+      "summary": "Two years, one set of papers. We finish the Cambridge O Level syllabus by Term 2 of Grade 11 and spend the rest of the time on timed past papers, mark schemes and examiner reports, so students know what each paper rewards and where their marks usually leak."
+    },
+    {
+      "id": "hsc",
+      "name": "Grade 12–13",
+      "exam": "HSC · Cambridge A Level",
+      "summary": "A Level papers reward method that is quick and clean. Lessons move briskly, every week ends with exam-style questions marked to the Cambridge scheme, and groups stay at twelve or fewer. University and scholarship deadlines are planned from the first term of Grade 12."
+    }
+  ],
+  "categories": [
+    { "id": "maths", "name": "Mathematics" },
+    { "id": "sciences", "name": "Sciences" },
+    { "id": "commerce", "name": "Commerce" },
+    { "id": "computing", "name": "Computing" },
+    { "id": "languages", "name": "Languages" }
+  ],
+  "method": [
+    {
+      "title": "Live lesson",
+      "text": "Ninety minutes on weekdays, two hours on Saturdays; in the room, on Zoom, or both at once. One topic, taught from first principles, then worked examples at exam pace. Questions are expected and cameras stay on."
+    },
+    {
+      "title": "Replay the same evening",
+      "text": "The recording and the board notes go into the class folder before 21:30. Students who missed the lesson, or only half followed it, watch it before they start the homework."
+    },
+    {
+      "title": "Homework, marked",
+      "text": "A short set after every lesson, handed in on paper or as photos. It comes back within 48 hours with marks in the margin and one line on what to fix first."
+    },
+    {
+      "title": "Past-paper drill",
+      "text": "Once a week, a timed section of a real Cambridge paper, marked against the official mark scheme. Grade 7–9 groups do NCE-style questions instead. This is where exam technique is learnt, while mistakes are still cheap."
+    },
+    {
+      "title": "A note home",
+      "text": "At the end of each month, parents get a short WhatsApp note: attendance, homework marks, the latest paper score and the one thing to work on next. No jargon, and no surprises at report time."
+    }
+  ],
+  "courses": [
+    {
+      "id": "lower-mathematics",
+      "title": "Mathematics",
+      "code": "",
+      "level": "lower",
+      "category": "maths",
+      "summary": "Number, algebra and geometry built carefully, so Grade 10 is not spent catching up.",
+      "description": "Most trouble at SC starts here: fractions that were never quite understood, negative numbers handled by guesswork, algebra learnt as a set of tricks. This group goes back over each idea slowly enough that it sticks, then practises it until it is automatic.\n\nTwo lessons a week in Room B, about twenty minutes of homework a night, and a ten-question test every Friday. Parents see the marks each month, with a line on what changed. By the end of Grade 9 students should be ready for the NCE and, more usefully, for O Level Mathematics.",
+      "topics": [
+        "Integers and order of operations",
+        "Fractions, decimals and percentages",
+        "Ratio, rate and proportion",
+        "Algebraic expressions",
+        "Linear equations and inequalities",
+        "Coordinates and straight-line graphs",
+        "Angles, triangles and polygons",
+        "Perimeter, area and volume",
+        "Statistics and probability"
+      ],
+      "mode": "in-person",
+      "fee": 1400,
+      "seats": 14,
+      "seatsLeft": 5,
+      "tutorId": "priya",
+      "featured": true,
+      "visible": true
+    },
+    {
+      "id": "lower-science",
+      "title": "Science",
+      "code": "",
+      "level": "lower",
+      "category": "sciences",
+      "summary": "Biology, chemistry and physics taught together, with a simple practical most Saturdays.",
+      "description": "Lower-secondary science covers a lot of ground thinly. We slow it down: one topic per Saturday, a small practical to anchor it, and the key vocabulary written out until students use it correctly without being reminded.\n\nThe two-hour session leaves time to redo the week's school homework if it went badly. Grade 9 students move on to NCE-style questions from Term 2, so the format is familiar long before the exam.",
+      "topics": [
+        "Cells and organisms",
+        "Human body systems",
+        "Particles and states of matter",
+        "Elements, compounds and mixtures",
+        "Acids, bases and indicators",
+        "Forces and motion",
+        "Energy and electricity",
+        "Light and sound",
+        "Working scientifically"
+      ],
+      "mode": "in-person",
+      "fee": 1200,
+      "seats": 14,
+      "seatsLeft": 8,
+      "tutorId": "priya",
+      "featured": false,
+      "visible": true
+    },
+    {
+      "id": "sc-mathematics",
+      "title": "Mathematics",
+      "code": "4024",
+      "level": "sc",
+      "category": "maths",
+      "summary": "The full O Level syllabus by Term 2 of Grade 11, then past papers until the exam.",
+      "description": "Two lessons a week, one topic at a time, in the order that makes the next topic easier: algebra before graphs, similar triangles before trigonometry. Each lesson ends with exam questions on that topic, marked before the next one.\n\nFrom Term 2 of Grade 11 the group switches to full papers under time: Paper 1 without a calculator, Paper 2 with one. Every student keeps an error log, and the last month is spent on whatever it shows. Most lost marks come from a handful of repeated mistakes; the point is to find yours early.",
+      "topics": [
+        "Number",
+        "Algebra and graphs",
+        "Coordinate geometry",
+        "Geometry",
+        "Mensuration",
+        "Trigonometry",
+        "Transformations and vectors",
+        "Probability",
+        "Statistics"
+      ],
+      "mode": "hybrid",
+      "fee": 1800,
+      "seats": 12,
+      "seatsLeft": 2,
+      "tutorId": "kavish",
+      "featured": true,
+      "visible": true
+    },
+    {
+      "id": "sc-additional-mathematics",
+      "title": "Additional Mathematics",
+      "code": "4037",
+      "level": "sc",
+      "category": "maths",
+      "summary": "For students who find 4024 comfortable and want calculus before Grade 12.",
+      "description": "Add Maths moves fast and assumes the algebra is solid. We check that in the first fortnight and fill any gaps before starting functions and logarithms. After that, each two-hour Saturday lesson covers one topic in full: the theory, worked examples, and a set of past-paper questions done in the room.\n\nIt is worth taking alongside 4024 if A Level Mathematics or Physics is on the cards. The overlap with Pure Mathematics 1 is large, and students who have done 4037 usually start Grade 12 a term ahead.",
+      "topics": [
+        "Functions",
+        "Quadratic functions",
+        "Factors of polynomials",
+        "Simultaneous equations",
+        "Logarithmic and exponential functions",
+        "Vectors in two dimensions",
+        "Circular measure",
+        "Trigonometry",
+        "Permutations and combinations",
+        "Differentiation and integration"
+      ],
+      "mode": "hybrid",
+      "fee": 1600,
+      "seats": 10,
+      "seatsLeft": 3,
+      "tutorId": "kavish",
+      "featured": false,
+      "visible": true
+    },
+    {
+      "id": "sc-physics",
+      "title": "Physics",
+      "code": "5054",
+      "level": "sc",
+      "category": "sciences",
+      "summary": "The idea first, then the formula, then the exam question it turns up in.",
+      "description": "O Level Physics rewards students who can explain as well as calculate. Every topic starts with a demonstration or a sketch, moves to the equation, and finishes with the kind of question that asks why. Units and significant figures are checked on every piece of homework, because that is where easy marks go.\n\nPractical skills are taught through the alternative-to-practical paper: reading scales, drawing tables, spotting sources of error. Two lessons a week, in Room A or on Zoom.",
+      "topics": [
+        "Motion",
+        "Mass, weight and density",
+        "Forces and momentum",
+        "Energy, work and power",
+        "Pressure",
+        "Thermal physics",
+        "Waves, light and sound",
+        "Electric circuits",
+        "Electromagnetic effects",
+        "Radioactivity"
+      ],
+      "mode": "hybrid",
+      "fee": 1800,
+      "seats": 12,
+      "seatsLeft": 4,
+      "tutorId": "kavish",
+      "featured": true,
+      "visible": true
+    },
+    {
+      "id": "sc-chemistry",
+      "title": "Chemistry",
+      "code": "5070",
+      "level": "sc",
+      "category": "sciences",
+      "summary": "Moles, bonding and organic chemistry, with the calculations practised until they are routine.",
+      "description": "Students who struggle with chemistry are usually struggling with three things: the mole, balancing equations, and remembering which test gives which result. We teach those three early and come back to them every few weeks, so they are fluent by Grade 11.\n\nLessons are in person because chemistry needs a bench now and then. Simple practicals such as titrations, rates and tests for ions are done in pairs, and each one is written up the way Cambridge expects on the practical papers.",
+      "topics": [
+        "States of matter",
+        "Atoms, elements and compounds",
+        "Stoichiometry",
+        "Electrochemistry",
+        "Chemical energetics",
+        "Rates of reaction",
+        "Acids, bases and salts",
+        "The Periodic Table",
+        "Metals",
+        "Organic chemistry"
+      ],
+      "mode": "in-person",
+      "fee": 1800,
+      "seats": 10,
+      "seatsLeft": 4,
+      "tutorId": "priya",
+      "featured": false,
+      "visible": true
+    },
+    {
+      "id": "sc-biology",
+      "title": "Biology",
+      "code": "5090",
+      "level": "sc",
+      "category": "sciences",
+      "summary": "A large syllabus made manageable: one system at a time, and the wording mark schemes want.",
+      "description": "Biology is the subject where students know a lot and still lose marks, usually through loose wording. Each topic is paired with the exact phrases mark schemes reward, such as \"partially permeable\" and \"down a concentration gradient\", and homework is marked for language as much as content.\n\nOne two-hour Saturday session, in Room B or on Zoom. Each term ends with a full past paper and a one-to-one look at the result.",
+      "topics": [
+        "Cells and movement into and out of cells",
+        "Biological molecules and enzymes",
+        "Plant nutrition",
+        "Human nutrition",
+        "Transport in plants and animals",
+        "Gas exchange and respiration",
+        "Coordination and response",
+        "Reproduction",
+        "Inheritance",
+        "Organisms and their environment"
+      ],
+      "mode": "hybrid",
+      "fee": 1600,
+      "seats": 12,
+      "seatsLeft": 6,
+      "tutorId": "priya",
+      "featured": false,
+      "visible": true
+    },
+    {
+      "id": "sc-accounting",
+      "title": "Accounting",
+      "code": "7707",
+      "level": "sc",
+      "category": "commerce",
+      "summary": "Double entry until it is second nature, then the final accounts that carry the marks.",
+      "description": "This is Cambridge O Level Accounting, still called Principles of Accounts in most schools. It is a subject of habits. Students who learn double entry properly in Grade 10 find the rest straightforward; students who memorise layouts struggle as soon as a question is worded differently. So the first term goes on the ledger, the books of prime entry and the trial balance, and we do not hurry it.\n\nGrade 11 covers financial statements, year-end adjustments, partnerships and ratio analysis, with a past-paper question in every lesson. Lessons are on Zoom, and worked answers are shared as PDFs the same evening.",
+      "topics": [
+        "The fundamentals of accounting",
+        "Books of prime entry",
+        "Double entry and the ledger",
+        "Trial balance and correction of errors",
+        "Bank reconciliation",
+        "Control accounts",
+        "Depreciation and disposal of non-current assets",
+        "Accruals, prepayments and irrecoverable debts",
+        "Financial statements of sole traders and partnerships",
+        "Analysis and interpretation"
+      ],
+      "mode": "online",
+      "fee": 1800,
+      "seats": 12,
+      "seatsLeft": 7,
+      "tutorId": "yannick",
+      "featured": false,
+      "visible": true
+    },
+    {
+      "id": "sc-computer-science",
+      "title": "Computer Science",
+      "code": "2210",
+      "level": "sc",
+      "category": "computing",
+      "summary": "Theory, pseudocode and Python, aimed squarely at the two papers Cambridge sets.",
+      "description": "Paper 1 is computer systems: data representation, networks, hardware, security. Paper 2 is algorithms, programming and logic, and it is where most marks are won or lost. At least half of every lesson is spent writing and tracing code, first in Cambridge pseudocode and then in Python.\n\nOne 90-minute lesson a week, online, so screens can be shared and code run live. Students need a laptop for this course; a tablet is not enough. Homework includes a short program every week, checked line by line.",
+      "topics": [
+        "Data representation",
+        "Data transmission",
+        "Hardware",
+        "Software",
+        "The internet and its uses",
+        "Automated and emerging technologies",
+        "Algorithm design and problem-solving",
+        "Programming",
+        "Databases",
+        "Boolean logic"
+      ],
+      "mode": "online",
+      "fee": 1500,
+      "seats": 10,
+      "seatsLeft": 5,
+      "tutorId": "kavish",
+      "featured": false,
+      "visible": true
+    },
+    {
+      "id": "sc-english-language",
+      "title": "English Language",
+      "code": "1123",
+      "level": "sc",
+      "category": "languages",
+      "summary": "Reading closely, summarising tightly and writing to a plan.",
+      "description": "1123 has two papers, Reading and Writing, and both are won on method more than flair. Students learn to find the answer in the passage and put it in their own words, to summarise within the word limit, and to plan a composition in a few minutes before writing it.\n\nOne lesson a week online, plus one piece of writing marked each week with corrections in the margin. Students then rewrite their weakest paragraph, which is often where they improve most.",
+      "topics": [
+        "Comprehension: explicit and implicit meaning",
+        "Summary writing",
+        "Vocabulary in context",
+        "Directed writing",
+        "Narrative writing",
+        "Descriptive writing",
+        "Argumentative writing",
+        "Grammar, spelling and punctuation"
+      ],
+      "mode": "online",
+      "fee": 1500,
+      "seats": 12,
+      "seatsLeft": 6,
+      "tutorId": "yannick",
+      "featured": false,
+      "visible": true
+    },
+    {
+      "id": "hsc-mathematics",
+      "title": "Mathematics",
+      "code": "9709",
+      "level": "hsc",
+      "category": "maths",
+      "summary": "Pure 1 and 3, Mechanics and Statistics 1, over two years at A Level pace.",
+      "description": "Grade 12 covers Pure Mathematics 1 and Probability & Statistics 1; Grade 13 covers Pure Mathematics 3 and Mechanics. Every lesson moves from the idea to a clean worked example to exam questions, and the questions get harder each week rather than each term.\n\nKavish teaches this group himself and keeps it at twelve. Students chasing a scholarship can take an extra past paper each fortnight, marked to the Cambridge scheme with notes on presentation: at A Level, a correct answer with an unclear method can still lose marks.",
+      "topics": [
+        "Functions and quadratics",
+        "Coordinate geometry",
+        "Trigonometry",
+        "Series",
+        "Differentiation and integration",
+        "Vectors",
+        "Differential equations",
+        "Complex numbers",
+        "Kinematics and Newton's laws of motion",
+        "The normal distribution"
+      ],
+      "mode": "hybrid",
+      "fee": 2600,
+      "seats": 12,
+      "seatsLeft": 1,
+      "tutorId": "kavish",
+      "featured": true,
+      "visible": true
+    },
+    {
+      "id": "hsc-physics",
+      "title": "Physics",
+      "code": "9702",
+      "level": "hsc",
+      "category": "sciences",
+      "summary": "Mechanics, waves and circuits in Grade 12; fields, oscillations and quantum physics in Grade 13.",
+      "description": "A Level Physics asks for more mathematics than most students expect: rearranging, logarithms, reading gradients off awkward graphs. We teach that alongside the physics instead of assuming it, which is one reason this group pairs well with 9709.\n\nPaper 3 and Paper 5 are the practical papers, and they are mostly learnable: uncertainties, tables, graph work, planning an experiment. They get a full lesson every month from the start of Grade 12.",
+      "topics": [
+        "Kinematics",
+        "Dynamics",
+        "Work, energy and power",
+        "Waves",
+        "Superposition",
+        "D.C. circuits",
+        "Gravitational fields",
+        "Oscillations",
+        "Capacitance",
+        "Quantum physics"
+      ],
+      "mode": "hybrid",
+      "fee": 2600,
+      "seats": 10,
+      "seatsLeft": 3,
+      "tutorId": "kavish",
+      "featured": false,
+      "visible": true
+    },
+    {
+      "id": "hsc-chemistry",
+      "title": "Chemistry",
+      "code": "9701",
+      "level": "hsc",
+      "category": "sciences",
+      "summary": "Physical, inorganic and organic chemistry, with mechanisms drawn until they make sense.",
+      "description": "9701 is a big syllabus. We split it into the three strands Cambridge uses, physical, inorganic and organic, and rotate between them so nothing goes cold before the exam. Physical chemistry gets the most calculation practice; organic gets a reaction map that students build themselves over the two years.\n\nLessons are in Room B with eight students at most, which makes it possible to look at everyone's working, not only the loudest student's. Practical skills for Papers 3 and 5 are covered through data-handling exercises and a few bench experiments each term.",
+      "topics": [
+        "Atomic structure",
+        "Chemical bonding",
+        "Chemical energetics",
+        "Electrochemistry",
+        "Equilibria",
+        "Reaction kinetics",
+        "Transition elements",
+        "Hydrocarbons",
+        "Carbonyl compounds",
+        "Analytical techniques"
+      ],
+      "mode": "in-person",
+      "fee": 2600,
+      "seats": 8,
+      "seatsLeft": 2,
+      "tutorId": "priya",
+      "featured": true,
+      "visible": true
+    },
+    {
+      "id": "hsc-economics",
+      "title": "Economics",
+      "code": "9708",
+      "level": "hsc",
+      "category": "commerce",
+      "summary": "Micro, macro and the essay questions that decide the grade.",
+      "description": "A Level Economics comes down to two skills: drawing the right diagram quickly, and writing an argument about it that reaches a judgement. We teach the theory with Mauritian examples, from sugar and textile exports to tourism and the rupee, then practise turning it into twenty-mark essays with a clear conclusion.\n\nData-response questions get a lesson of their own every month. Essays are marked against the Cambridge levels of response, with a short note on what would have moved the answer up a level.",
+      "topics": [
+        "Scarcity, choice and opportunity cost",
+        "Demand, supply and elasticity",
+        "Market failure and government intervention",
+        "Costs, revenue and market structures",
+        "Labour markets",
+        "National income and economic growth",
+        "Inflation, unemployment and policy",
+        "Exchange rates and the balance of payments",
+        "Development economics"
+      ],
+      "mode": "hybrid",
+      "fee": 2400,
+      "seats": 12,
+      "seatsLeft": 5,
+      "tutorId": "yannick",
+      "featured": true,
+      "visible": true
+    },
+    {
+      "id": "hsc-computer-science",
+      "title": "Computer Science",
+      "code": "9618",
+      "level": "hsc",
+      "category": "computing",
+      "summary": "AS and A Level Computer Science in Python, with the theory papers taken seriously.",
+      "description": "9618 has four papers: two of theory, two of problem-solving and programming. Students who code well tend to underrate the theory, and students who revise theory well often freeze in front of a blank program. Lessons alternate between the two, and every week includes a timed programming task.\n\nWe use Python, one of the three languages Cambridge accepts, and Cambridge pseudocode for written answers. Grade 13 covers recursion, object-oriented programming and abstract data types such as stacks, queues and linked lists. Lessons are on Google Meet so code can be shared and run live.",
+      "topics": [
+        "Information representation",
+        "Communication",
+        "Hardware",
+        "Processor fundamentals",
+        "Databases",
+        "Algorithm design and problem-solving",
+        "Data types and structures",
+        "Software development",
+        "Artificial Intelligence",
+        "Further programming"
+      ],
+      "mode": "online",
+      "fee": 2400,
+      "seats": 8,
+      "seatsLeft": 5,
+      "tutorId": "kavish",
+      "featured": false,
+      "visible": true
+    },
+    {
+      "id": "hsc-general-paper",
+      "title": "General Paper",
+      "code": "8021",
+      "level": "hsc",
+      "category": "languages",
+      "summary": "Essays with a clear argument, and comprehension read carefully.",
+      "description": "General Paper is part of the HSC, and it is often the subject students prepare least. The essay paper rewards a clear position, well-chosen examples and control of language; the comprehension paper rewards reading what is actually written. Both can be taught.\n\nOne lesson a week online. Every fortnight students write a full essay under time and get it back with margin comments and a mark. The group keeps a shared file of Mauritian and international examples on climate, technology, education and the economy, and adds to it all year.",
+      "topics": [
+        "Essay planning and structure",
+        "Building an argument",
+        "Choosing evidence and examples",
+        "Comprehension: inference and analysis",
+        "Evaluating claims and sources",
+        "Summary within a word limit",
+        "Register and vocabulary",
+        "Current affairs: Mauritius and the world"
+      ],
+      "mode": "online",
+      "fee": 1500,
+      "seats": 12,
+      "seatsLeft": 7,
+      "tutorId": "yannick",
+      "featured": false,
+      "visible": true
+    }
+  ],
+  "tutors": [
+    {
+      "id": "kavish",
+      "name": "Kavish",
+      "role": "Founder · Mathematics & Physics",
+      "bio": "Kavish has taught Mathematics and Physics since 2012: six years in state secondary schools, then in his own rooms in Quatre Bornes. He still teaches every SC and A Level Mathematics group himself. His lessons are quiet and quick, and built around one question: can you explain why that step works? He added Computer Science in 2019, on the grounds that most of it is mathematics with stricter error messages.",
+      "subjects": ["Mathematics", "Additional Mathematics", "Physics", "Computer Science"],
+      "credentials": [
+        "BSc (Hons) Mathematics, University of Mauritius",
+        "PGCE, Mauritius Institute of Education",
+        "Six years teaching in state secondary schools"
+      ],
+      "years": 14,
+      "photo": "",
+      "visible": true
+    },
+    {
+      "id": "priya",
+      "name": "Priya N.",
+      "role": "Chemistry, Biology & Grade 7–9",
+      "bio": "Priya taught Chemistry and Biology at a secondary school in the centre of the island for four years before joining in 2021. She is strict about language (\"the enzyme is denatured\", never \"the enzyme dies\") because that is where science marks quietly disappear. She also runs both Grade 7–9 groups, where she is patient, firm, and known for a ten-question Friday test that nobody minds as much as they claim.",
+      "subjects": ["Chemistry", "Biology", "Grade 7–9 Mathematics", "Grade 7–9 Science"],
+      "credentials": [
+        "BSc (Hons) Chemistry, University of Mauritius",
+        "PGCE, Mauritius Institute of Education"
+      ],
+      "years": 9,
+      "photo": "",
+      "visible": true
+    },
+    {
+      "id": "yannick",
+      "name": "Yannick L.",
+      "role": "Accounting, Economics & English",
+      "bio": "Yannick read Economics at the University of Mauritius and spent more time on the debating team than he admits to his students, which is how he came to teach General Paper and SC English alongside Accounting and Economics. He joined in 2022 after three years at a private secondary school, and teaches mostly online. His feedback is short: what worked, what to cut, and what to try next time.",
+      "subjects": ["Accounting", "Economics", "English Language", "General Paper"],
+      "credentials": [
+        "BSc (Hons) Economics, University of Mauritius",
+        "PGCE, Mauritius Institute of Education",
+        "ACCA Applied Knowledge papers"
+      ],
+      "years": 7,
+      "photo": "",
+      "visible": true
+    }
+  ],
+  "testimonials": [
+    {
+      "id": "t-1",
+      "quote": "I used to skip the vectors question every time. Kavish made me do six of them in one Saturday lesson, and now it's the first one I look for.",
+      "name": "Riya S.",
+      "detail": "SC 2025 · Additional Mathematics",
+      "visible": true
+    },
+    {
+      "id": "t-2",
+      "quote": "What I value is the note at the end of each month. Three or four lines, honest, and it matches what I see at home. My son complains about the homework, which I take as a good sign.",
+      "name": "Vandana P.",
+      "detail": "Parent · SC 2026 · Mathematics & Physics",
+      "visible": true
+    },
+    {
+      "id": "t-3",
+      "quote": "The replays saved me in the cyclone week. I watched the integration lesson twice and my homework still came back marked by Monday.",
+      "name": "Kevin M.",
+      "detail": "HSC 2025 · Mathematics",
+      "visible": true
+    },
+    {
+      "id": "t-4",
+      "quote": "Priya explains organic chemistry like a recipe you can check. I stopped guessing mechanisms and started drawing the arrows the right way round.",
+      "name": "Shreya J.",
+      "detail": "HSC 2026 · Chemistry",
+      "visible": true
+    },
+    {
+      "id": "t-5",
+      "quote": "Small group, no hiding at the back. That was the point.",
+      "name": "Fabrice T.",
+      "detail": "Parent · Grade 9",
+      "visible": true
+    },
+    {
+      "id": "t-6",
+      "quote": "I joined for General Paper only, because my essays went nowhere. Yannick gave me a way to plan that I ended up using in Economics too. B in GP, up from a D in the mocks.",
+      "name": "Nitish B.",
+      "detail": "HSC 2025 · General Paper & Economics",
+      "visible": true
+    }
+  ],
+  "plans": [
+    {
+      "id": "single",
+      "name": "One subject",
+      "monthly": 1800,
+      "termly": 5100,
+      "description": "One course, shown at the usual SC fee. Fees follow level and hours: Grade 7–9 courses are Rs 1,200–1,400 a month and A Level courses up to Rs 2,600. Each course page shows its own.",
+      "features": [
+        "Live lessons in the room, on Zoom, or both",
+        "Recording and board notes the same evening",
+        "Homework marked within 48 hours",
+        "A timed past-paper drill every week",
+        "A progress note on WhatsApp each month"
+      ],
+      "highlighted": false,
+      "ctaLabel": "Enrol in one subject",
+      "visible": true
+    },
+    {
+      "id": "pair",
+      "name": "Two subjects",
+      "monthly": 3400,
+      "termly": 9600,
+      "description": "Any two courses for Rs 200 a month less than paying for each separately. Shown at the SC fee; the usual pairing is Mathematics with Physics or Add Maths.",
+      "features": [
+        "Everything in One subject, for both",
+        "Timetabled so the two never clash",
+        "One combined progress note each month",
+        "A full mock paper in each subject in Term 3",
+        "Each further SC subject: Rs 1,600 a month"
+      ],
+      "highlighted": true,
+      "ctaLabel": "Choose two subjects",
+      "visible": true
+    },
+    {
+      "id": "hsc-programme",
+      "name": "HSC programme",
+      "monthly": 8200,
+      "termly": 23100,
+      "description": "Three A Level subjects and General Paper for Grade 12 and 13, at one fixed price.",
+      "features": [
+        "Three principal subjects plus General Paper",
+        "Everything in One subject, for all four",
+        "An extra marked past paper each fortnight, if wanted",
+        "Two full mock exams a year, under exam conditions",
+        "A call each term to plan mocks and university deadlines"
+      ],
+      "highlighted": false,
+      "ctaLabel": "Plan an HSC programme",
+      "visible": true
+    }
+  ],
+  "timetable": [
+    { "id": "s-01", "day": "mon", "start": "15:30", "end": "17:00", "courseId": "sc-chemistry", "room": "Room B · Quatre Bornes" },
+    { "id": "s-02", "day": "mon", "start": "17:15", "end": "18:45", "courseId": "sc-physics", "room": "Room A + Zoom" },
+    { "id": "s-03", "day": "mon", "start": "17:15", "end": "18:45", "courseId": "hsc-economics", "room": "Room B + Zoom" },
+    { "id": "s-04", "day": "mon", "start": "19:00", "end": "20:30", "courseId": "hsc-mathematics", "room": "Room A + Zoom" },
+    { "id": "s-05", "day": "tue", "start": "15:30", "end": "17:00", "courseId": "lower-mathematics", "room": "Room B · Quatre Bornes" },
+    { "id": "s-06", "day": "tue", "start": "15:30", "end": "17:00", "courseId": "sc-accounting", "room": "Online · Zoom" },
+    { "id": "s-07", "day": "tue", "start": "17:15", "end": "18:45", "courseId": "sc-mathematics", "room": "Room A + Zoom" },
+    { "id": "s-08", "day": "tue", "start": "17:15", "end": "18:45", "courseId": "hsc-chemistry", "room": "Room B · Quatre Bornes" },
+    { "id": "s-09", "day": "tue", "start": "19:00", "end": "20:30", "courseId": "hsc-physics", "room": "Room A + Zoom" },
+    { "id": "s-10", "day": "wed", "start": "15:30", "end": "17:00", "courseId": "sc-english-language", "room": "Online · Google Meet" },
+    { "id": "s-11", "day": "wed", "start": "17:15", "end": "18:45", "courseId": "sc-physics", "room": "Room A + Zoom" },
+    { "id": "s-12", "day": "wed", "start": "19:00", "end": "20:30", "courseId": "hsc-computer-science", "room": "Online · Google Meet" },
+    { "id": "s-13", "day": "thu", "start": "15:30", "end": "17:00", "courseId": "sc-chemistry", "room": "Room B · Quatre Bornes" },
+    { "id": "s-14", "day": "thu", "start": "17:15", "end": "18:45", "courseId": "sc-mathematics", "room": "Room A + Zoom" },
+    { "id": "s-15", "day": "thu", "start": "17:15", "end": "18:45", "courseId": "hsc-economics", "room": "Room B + Zoom" },
+    { "id": "s-16", "day": "thu", "start": "19:00", "end": "20:30", "courseId": "hsc-mathematics", "room": "Room A + Zoom" },
+    { "id": "s-17", "day": "fri", "start": "15:30", "end": "17:00", "courseId": "lower-mathematics", "room": "Room B · Quatre Bornes" },
+    { "id": "s-18", "day": "fri", "start": "15:30", "end": "17:00", "courseId": "sc-accounting", "room": "Online · Zoom" },
+    { "id": "s-19", "day": "fri", "start": "17:15", "end": "18:45", "courseId": "sc-computer-science", "room": "Online · Zoom" },
+    { "id": "s-20", "day": "fri", "start": "17:15", "end": "18:45", "courseId": "hsc-chemistry", "room": "Room B · Quatre Bornes" },
+    { "id": "s-21", "day": "fri", "start": "19:00", "end": "20:30", "courseId": "hsc-physics", "room": "Room A + Zoom" },
+    { "id": "s-22", "day": "sat", "start": "08:00", "end": "10:00", "courseId": "sc-biology", "room": "Room B + Zoom" },
+    { "id": "s-23", "day": "sat", "start": "10:15", "end": "12:15", "courseId": "sc-additional-mathematics", "room": "Room A + Zoom" },
+    { "id": "s-24", "day": "sat", "start": "10:15", "end": "12:15", "courseId": "lower-science", "room": "Room B · Quatre Bornes" },
+    { "id": "s-25", "day": "sat", "start": "13:00", "end": "14:30", "courseId": "hsc-computer-science", "room": "Online · Google Meet" },
+    { "id": "s-26", "day": "sat", "start": "14:30", "end": "16:00", "courseId": "hsc-general-paper", "room": "Online · Zoom" }
+  ],
+  "resources": [
+    {
+      "id": "r-01",
+      "title": "4024 Paper 2, November 2024: worked solutions",
+      "type": "past-paper",
+      "level": "sc",
+      "category": "maths",
+      "year": 2024,
+      "description": "Every question worked in full, with the method marks shown where Cambridge awards them.",
+      "url": "",
+      "visible": true
+    },
+    {
+      "id": "r-02",
+      "title": "4037 Paper 1, November 2024: worked solutions",
+      "type": "past-paper",
+      "level": "sc",
+      "category": "maths",
+      "year": 2024,
+      "description": "Additional Mathematics, fully worked, with a second method in the margin wherever there is one.",
+      "url": "",
+      "visible": true
+    },
+    {
+      "id": "r-03",
+      "title": "9709 Paper 1 (Pure 1), November 2024: worked solutions",
+      "type": "past-paper",
+      "level": "hsc",
+      "category": "maths",
+      "year": 2024,
+      "description": "Each solution set out line by line, the way an examiner wants to read it.",
+      "url": "",
+      "visible": true
+    },
+    {
+      "id": "r-04",
+      "title": "9709 Paper 3 (Pure 3), November 2023: worked solutions",
+      "type": "past-paper",
+      "level": "hsc",
+      "category": "maths",
+      "year": 2023,
+      "description": "Includes the complex numbers and differential equations questions, with notes on where marks are usually dropped.",
+      "url": "",
+      "visible": true
+    },
+    {
+      "id": "r-05",
+      "title": "5054 Physics Paper 2, November 2024: worked answers",
+      "type": "past-paper",
+      "level": "sc",
+      "category": "sciences",
+      "year": 2024,
+      "description": "Calculations worked in full, and written answers given at the length the mark scheme expects.",
+      "url": "",
+      "visible": true
+    },
+    {
+      "id": "r-06",
+      "title": "9708 Economics Paper 2, November 2024: three marked essays",
+      "type": "past-paper",
+      "level": "hsc",
+      "category": "commerce",
+      "year": 2024,
+      "description": "Three answers to the same essay question, marked at three different levels, with comments on each.",
+      "url": "",
+      "visible": true
+    },
+    {
+      "id": "r-07",
+      "title": "Fractions, decimals and percentages: 30 graded questions",
+      "type": "worksheet",
+      "level": "lower",
+      "category": "maths",
+      "year": 2026,
+      "description": "Starts with a warm-up a Grade 7 student can do and ends with NCE-style problems. Answers at the back.",
+      "url": "",
+      "visible": true
+    },
+    {
+      "id": "r-08",
+      "title": "Moles and reacting masses: topic worksheet",
+      "type": "worksheet",
+      "level": "sc",
+      "category": "sciences",
+      "year": 2026,
+      "description": "Twenty questions in four steps of difficulty, for 5070 Chemistry. Full workings on the answer sheet.",
+      "url": "",
+      "visible": true
+    },
+    {
+      "id": "r-09",
+      "title": "Bank reconciliation statements: practice set",
+      "type": "worksheet",
+      "level": "sc",
+      "category": "commerce",
+      "year": 2026,
+      "description": "Six questions for 7707, from simple to past-paper standard, each with a completed cash book to check against.",
+      "url": "",
+      "visible": true
+    },
+    {
+      "id": "r-10",
+      "title": "NCE Science: key words and definitions",
+      "type": "notes",
+      "level": "lower",
+      "category": "sciences",
+      "year": 2026,
+      "description": "The definitions Grade 9 students are expected to write word for word, on two pages.",
+      "url": "",
+      "visible": true
+    },
+    {
+      "id": "r-11",
+      "title": "Cambridge pseudocode: a one-page reference",
+      "type": "notes",
+      "level": "sc",
+      "category": "computing",
+      "year": 2026,
+      "description": "Declarations, loops, arrays, files and procedures in the exact syntax used on 2210 and 9618 papers.",
+      "url": "",
+      "visible": true
+    },
+    {
+      "id": "r-12",
+      "title": "Organic reactions map for 9701",
+      "type": "notes",
+      "level": "hsc",
+      "category": "sciences",
+      "year": 2026,
+      "description": "Every AS and A Level organic reaction on one sheet, with reagents and conditions. Print it on A3.",
+      "url": "",
+      "visible": true
+    },
+    {
+      "id": "r-13",
+      "title": "General Paper: twelve essay plans",
+      "type": "notes",
+      "level": "hsc",
+      "category": "languages",
+      "year": 2025,
+      "description": "Plans for twelve recent-style questions, each with a position, three arguments and the examples behind them.",
+      "url": "",
+      "visible": true
+    },
+    {
+      "id": "r-14",
+      "title": "Differentiation from first principles (18 min)",
+      "type": "video",
+      "level": "hsc",
+      "category": "maths",
+      "year": 2026,
+      "description": "The idea behind the derivative, worked slowly, then three exam questions that test it.",
+      "url": "",
+      "visible": true
+    },
+    {
+      "id": "r-15",
+      "title": "Reading velocity–time graphs (12 min)",
+      "type": "video",
+      "level": "sc",
+      "category": "sciences",
+      "year": 2026,
+      "description": "Gradient, area under the line, and the three ways O Level questions try to catch you out.",
+      "url": "",
+      "visible": true
+    }
+  ],
+  "quiz": {
+    "title": "Where should you start?",
+    "intro": "Questions in maths, science, commerce and computing, from Grade 7 to A Level, getting harder as you go. There is no timer and no sign-up. If you haven't met a topic yet, make a sensible guess and move on.",
+    "questions": [
+      {
+        "id": "q-01",
+        "category": "maths",
+        "level": "lower",
+        "prompt": "What is three quarters of 56?",
+        "options": ["14", "42", "48", "36"],
+        "answer": 1,
+        "explain": "Divide by 4 to find one quarter, which is 14, then multiply by 3: 42."
+      },
+      {
+        "id": "q-02",
+        "category": "sciences",
+        "level": "lower",
+        "prompt": "Which of these is a chemical change?",
+        "options": ["An iron nail rusting", "Ice melting", "Sugar dissolving in tea", "Water boiling"],
+        "answer": 0,
+        "explain": "Rusting makes a new substance, iron oxide. The other three are physical changes: nothing new is made, and each can be reversed."
+      },
+      {
+        "id": "q-03",
+        "category": "maths",
+        "level": "lower",
+        "prompt": "A school bag costs Rs 2,400. In a sale it is 15% off. What is the sale price?",
+        "options": ["Rs 360", "Rs 2,385", "Rs 2,040", "Rs 2,160"],
+        "answer": 2,
+        "explain": "15% of 2,400 is 360. Take that off the price: 2,400 − 360 = Rs 2,040."
+      },
+      {
+        "id": "q-04",
+        "category": "computing",
+        "level": "lower",
+        "prompt": "What is the binary number 1011 in denary?",
+        "options": ["9", "13", "1011", "11"],
+        "answer": 3,
+        "explain": "The place values are 8, 4, 2 and 1, so 1011 means 8 + 0 + 2 + 1 = 11."
+      },
+      {
+        "id": "q-05",
+        "category": "sciences",
+        "level": "lower",
+        "prompt": "In a plant cell, where does photosynthesis take place?",
+        "options": ["Nucleus", "Chloroplast", "Cell wall", "Vacuole"],
+        "answer": 1,
+        "explain": "Chloroplasts contain chlorophyll, which absorbs the light energy photosynthesis needs."
+      },
+      {
+        "id": "q-06",
+        "category": "maths",
+        "level": "sc",
+        "prompt": "Factorise fully: 6x² − 15x",
+        "options": ["3(2x² − 5x)", "x(6x − 15)", "3x(2x − 5)", "6x(x − 15)"],
+        "answer": 2,
+        "explain": "The highest common factor of both terms is 3x, which leaves 3x(2x − 5). Taking out only 3, or only x, is correct but not fully factorised."
+      },
+      {
+        "id": "q-07",
+        "category": "sciences",
+        "level": "sc",
+        "prompt": "A car accelerates uniformly from rest to 20 m/s in 5 s. What is its acceleration?",
+        "options": ["0.25 m/s²", "100 m/s²", "15 m/s²", "4 m/s²"],
+        "answer": 3,
+        "explain": "Acceleration is the change in velocity divided by the time taken: 20 ÷ 5 = 4 m/s²."
+      },
+      {
+        "id": "q-08",
+        "category": "commerce",
+        "level": "sc",
+        "prompt": "Which of these is a credit balance in a trial balance?",
+        "options": ["Capital", "Drawings", "Purchases", "Machinery"],
+        "answer": 0,
+        "explain": "Capital is what the business owes its owner, so it is a credit balance. Drawings, purchases and assets such as machinery are debit balances."
+      },
+      {
+        "id": "q-09",
+        "category": "maths",
+        "level": "sc",
+        "prompt": "What is the gradient of the line through (1, 2) and (4, 11)?",
+        "options": ["1/3", "9", "3", "13/5"],
+        "answer": 2,
+        "explain": "Gradient = change in y ÷ change in x = (11 − 2) ÷ (4 − 1) = 9 ÷ 3 = 3."
+      },
+      {
+        "id": "q-10",
+        "category": "sciences",
+        "level": "sc",
+        "prompt": "How many moles are there in 22 g of carbon dioxide? (C = 12, O = 16)",
+        "options": ["2 mol", "0.5 mol", "22 mol", "0.25 mol"],
+        "answer": 1,
+        "explain": "Carbon dioxide is CO2, so its Mr is 12 + 2 × 16 = 44. Moles = mass ÷ Mr = 22 ÷ 44 = 0.5 mol."
+      },
+      {
+        "id": "q-11",
+        "category": "computing",
+        "level": "sc",
+        "prompt": "How many bits are needed to give each of 200 colours its own binary code?",
+        "options": ["7", "16", "8", "200"],
+        "answer": 2,
+        "explain": "7 bits give only 128 different codes, which is not enough. 8 bits give 256, which covers 200."
+      },
+      {
+        "id": "q-12",
+        "category": "commerce",
+        "level": "sc",
+        "prompt": "A trader buys goods for Rs 800 and sells them for Rs 1,000. What is the profit margin?",
+        "options": ["25%", "80%", "200%", "20%"],
+        "answer": 3,
+        "explain": "Margin compares profit with the selling price: 200 ÷ 1,000 = 20%. 25% is the mark-up, which compares profit with cost."
+      },
+      {
+        "id": "q-13",
+        "category": "maths",
+        "level": "hsc",
+        "prompt": "Differentiate y = x³ − 4x² + 7 with respect to x.",
+        "options": ["3x² − 4x", "3x² − 8x", "3x² − 8x + 7", "3x³ − 8x²"],
+        "answer": 1,
+        "explain": "Multiply each term by its power and reduce the power by one: 3x² − 8x. The constant 7 differentiates to zero."
+      },
+      {
+        "id": "q-14",
+        "category": "sciences",
+        "level": "hsc",
+        "prompt": "A wire is replaced by one of the same metal, twice as long and with half the cross-sectional area. What happens to the resistance?",
+        "options": ["It halves", "It stays the same", "It doubles", "It becomes four times as large"],
+        "answer": 3,
+        "explain": "Resistance = resistivity × length ÷ area. Doubling the length doubles it, and halving the area doubles it again: 2 × 2 = 4."
+      },
+      {
+        "id": "q-15",
+        "category": "commerce",
+        "level": "hsc",
+        "prompt": "The price of a good rises by 10% and the quantity demanded falls by 5%. What is the price elasticity of demand?",
+        "options": ["−0.5, so demand is inelastic", "−0.5, so demand is elastic", "−2.0, so demand is elastic", "−2.0, so demand is inelastic"],
+        "answer": 0,
+        "explain": "PED = % change in quantity demanded ÷ % change in price = −5 ÷ 10 = −0.5. Its size is less than 1, so demand is price-inelastic."
+      },
+      {
+        "id": "q-16",
+        "category": "maths",
+        "level": "hsc",
+        "prompt": "Find the integral of 2x + 1 from x = 0 to x = 2.",
+        "options": ["6", "4", "5", "10"],
+        "answer": 0,
+        "explain": "Integrate to get x² + x. At x = 2 that is 6, and at x = 0 it is 0, so the answer is 6 − 0 = 6."
+      },
+      {
+        "id": "q-17",
+        "category": "sciences",
+        "level": "hsc",
+        "prompt": "What is the pH of hydrochloric acid with a concentration of 0.010 mol/dm³?",
+        "options": ["0.01", "1", "2", "12"],
+        "answer": 2,
+        "explain": "HCl is a strong acid and fully dissociates, so [H+] = 0.010 mol/dm³. pH = −log(0.010) = 2."
+      },
+      {
+        "id": "q-18",
+        "category": "computing",
+        "level": "hsc",
+        "prompt": "What is the denary value of the 8-bit two's complement number 11111010?",
+        "options": ["250", "−6", "−5", "−122"],
+        "answer": 1,
+        "explain": "In two's complement the leftmost bit is worth −128, so the value is −128 + 64 + 32 + 16 + 8 + 2 = −6."
+      }
+    ],
+    "results": [
+      {
+        "min": 0,
+        "max": 39,
+        "title": "Start with the foundations",
+        "text": "Several of the basics are not automatic yet, and that is what costs marks later. A term in a Grade 7–9 group, or a slower start at SC, will fix it faster than pushing on. Book a free trial lesson and we will confirm the right group.",
+        "recommend": "lower"
+      },
+      {
+        "min": 40,
+        "max": 74,
+        "title": "Ready for SC work",
+        "text": "The core skills are mostly there. What is missing is accuracy under time and knowing what each question wants, and that is what an SC group with a weekly past-paper drill is for. Already in Grade 12? Expect to revisit a few O Level topics early on.",
+        "recommend": "sc"
+      },
+      {
+        "min": 75,
+        "max": 100,
+        "title": "Working at A Level pace",
+        "text": "You handled the harder questions with clean method. An HSC group will suit you: the work there is depth and speed. Choose your subjects and come to a free trial lesson.",
+        "recommend": "hsc"
+      }
+    ]
+  },
+  "faqs": [
+    {
+      "id": "f-1",
+      "q": "Can my child try a lesson before we pay?",
+      "a": "Yes. The first lesson in any group is free, in the room or on Zoom. Hand in the homework from that lesson too: seeing how it comes back marked is the quickest way to judge us. If the group turns out to be the wrong level, we will say so and suggest another."
+    },
+    {
+      "id": "f-2",
+      "q": "What happens if my child misses a lesson?",
+      "a": "Every lesson is recorded. The recording and the board notes go into the class folder the same evening, and homework is still marked if it comes in a day or two late. If a cyclone or torrential rain warning closes schools, the lesson goes ahead on Zoom at the usual time."
+    },
+    {
+      "id": "f-3",
+      "q": "How big are the groups?",
+      "a": "Twelve students at most for SC and HSC, fourteen for Grade 7–9, and several groups are smaller. Students joining on Zoom count towards the same limit, so a hybrid group never quietly doubles in size."
+    },
+    {
+      "id": "f-4",
+      "q": "Can we pay by Juice?",
+      "a": "Yes. Pay monthly or per term by MCB Juice or bank transfer; the details are on the Plans page. Please use the student's full name as the reference. Fees are due in the first week of the month, and a receipt comes back on WhatsApp."
+    },
+    {
+      "id": "f-5",
+      "q": "How will I know whether it is working?",
+      "a": "At the end of each month you get a short WhatsApp note: attendance, homework marks, the latest past-paper score and one thing to work on next. Twice a year we also meet you, or call, for fifteen minutes to go through the papers together."
+    },
+    {
+      "id": "f-6",
+      "q": "Which syllabus versions do you teach?",
+      "a": "The Cambridge syllabus your child will actually sit: 4024 for SC Mathematics, 9709 for A Level, and so on. When Cambridge revises a syllabus we teach the new version and mark which topics were added or dropped, so older past papers are used sensibly. Grade 7–9 groups follow the national curriculum and prepare for the NCE."
+    },
+    {
+      "id": "f-7",
+      "q": "What does my child need for online lessons?",
+      "a": "A laptop or tablet with a camera, a steady internet connection and a quiet corner. A phone screen is too small for past papers. Homework can be handed in as photos, so there is no need for a scanner. Computer Science students need a laptop."
+    },
+    {
+      "id": "f-8",
+      "q": "What if we need to stop?",
+      "a": "Tell us before the last week of the month and you will not be charged for the next one. Termly payments are refunded for any full months not yet started, less the termly discount. There is no deposit and no contract."
+    }
+  ],
+  "admin": { "passwordHash": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9" }
+}

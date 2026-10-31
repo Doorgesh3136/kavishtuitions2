@@ -1,0 +1,76 @@
+/* Design tokens shared by the public site and the admin panel.
+   Palette: warm exam-paper, ink, and one correction-pen red. Keep red under ~5% of any screen. */
+
+:root {
+  /* Surfaces */
+  --paper: #efebe3;
+  --paper-2: #e7e2d7;
+  --paper-3: #dcd5c6;
+  --card: #f6f3ec;
+
+  /* Ink */
+  --ink: #161513;
+  --ink-2: #3b3934;
+  --ink-3: #5e5a52;       /* AA for small text on paper, paper-2 and paper-3 */
+  --ink-4: #9a958a;
+  --on-ink: #efebe3;
+  --on-ink-2: rgba(239, 235, 227, 0.68);
+  --on-ink-line: rgba(239, 235, 227, 0.16);
+
+  /* Lines */
+  --line: rgba(22, 21, 19, 0.14);
+  --line-strong: rgba(22, 21, 19, 0.32);
+
+  /* Accents */
+  --red: #e0442a;          /* decorative, large text, pen marks */
+  --red-ink: #b8321c;      /* red text on paper (AA) */
+  --red-wash: rgba(224, 68, 42, 0.1);
+  --lagoon: #1e6b66;       /* rare: "online now", success */
+  --lagoon-wash: rgba(30, 107, 102, 0.1);
+  --amber: #c98a14;        /* rare: warnings, "few seats left" */
+  --amber-wash: rgba(201, 138, 20, 0.12);
+
+  /* Type */
+  --font-display: "Instrument Serif", "Iowan Old Style", "Times New Roman", serif;
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --fs-hero: clamp(3.25rem, 9.2vw, 10.5rem);
+  --fs-h1: clamp(2.75rem, 6.4vw, 6.5rem);
+  --fs-h2: clamp(2.1rem, 4.4vw, 4.25rem);
+  --fs-h3: clamp(1.4rem, 2.1vw, 1.9rem);
+  --fs-lead: clamp(1.125rem, 1.4vw, 1.375rem);
+  --fs-body: 1.0625rem;
+  --fs-small: 0.9rem;
+  --fs-micro: 0.75rem;
+
+  --lh-tight: 0.92;
+  --lh-snug: 1.12;
+  --lh-body: 1.55;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
+  --ease-soft: cubic-bezier(0.33, 1, 0.68, 1);
+  --dur-fast: 180ms;
+  --dur: 420ms;
+  --dur-slow: 900ms;
+
+  /* Layout */
+  --gutter: clamp(16px, 4vw, 56px);
+  --maxw: 1440px;
+  --header-h: 72px;
+  --r-sm: 4px;
+  --r-md: 10px;
+  --r-lg: 18px;
+  --r-pill: 999px;
+
+  /* Stacking */
+  --z-scene: 0;
+  --z-content: 1;
+  --z-header: 50;
+  --z-overlay: 70;
+  --z-transition: 90;
+  --z-loader: 100;
+  --z-cursor: 110;
+}
